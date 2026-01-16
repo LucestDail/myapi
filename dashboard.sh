@@ -36,6 +36,8 @@ CACHE_INTERVAL=60
 CAT_FRAME=0
 
 # 터미널 크기
+COLS=80
+
 get_size() {
     COLS=$(tput cols 2>/dev/null || echo 80)
     [ $COLS -lt 60 ] && COLS=60
@@ -43,43 +45,6 @@ get_size() {
 
 # 반복 문자
 rep() { printf "%${2}s" | tr ' ' "$1"; }
-
-# 라인 출력
-line() {
-    local color="${1:-$DIM}"
-    echo -e "${color}+$(rep '-' $((COLS-2)))+${RESET}"
-}
-
-# 텍스트 출력 (테두리 포함)
-txt() {
-    local text="$1"
-    local color="${2:-$DIM}"
-    local plain=$(echo -e "$text" | sed 's/\x1b\[[0-9;]*m//g')
-    local len=${#plain}
-    local pad=$((COLS - len - 4))
-    [ $pad -lt 0 ] && pad=0
-    echo -e "${color}|${RESET} ${text}$(printf "%${pad}s" "") ${color}|${RESET}"
-}
-
-# 중앙 텍스트
-center() {
-    local text="$1"
-    local color="${2:-$DIM}"
-    local plain=$(echo -e "$text" | sed 's/\x1b\[[0-9;]*m//g')
-    local len=${#plain}
-    local total=$((COLS - 2))
-    local left=$(( (total - len) / 2 ))
-    local right=$((total - len - left))
-    [ $left -lt 0 ] && left=0
-    [ $right -lt 0 ] && right=0
-    echo -e "${color}|${RESET}$(printf "%${left}s" "")${text}$(printf "%${right}s" "")${color}|${RESET}"
-}
-
-# 빈 줄
-empty() {
-    local color="${1:-$DIM}"
-    echo -e "${color}|$(rep ' ' $((COLS-2)))|${RESET}"
-}
 
 # 데이터 갱신 체크
 need_refresh() {
@@ -90,7 +55,8 @@ need_refresh() {
 fetch_data() {
     if need_refresh; then
         CACHE_LOCATION=$(curl -s --connect-timeout 2 "${API_SERVER}/api/location/weather" 2>/dev/null)
-        local symbols=("SPY" "QQQ" "NVDA" "TSLA" "SNPS" "REKR" "SMCX" "ETHU" "BITX" "GLDM")
+        # 주식 티커 (12개)
+        local symbols=("SPY" "QLD" "NVDA" "TSLA" "SNPS" "REKR" "SMCX" "ETHU" "BITX" "GLDM" "XXRP" "SOLT")
         CACHE_STOCKS=""
         for s in "${symbols[@]}"; do
             local d=$(curl -s --connect-timeout 2 "${API_SERVER}/api/finnhub/quote?symbol=${s}" 2>/dev/null)
@@ -102,7 +68,7 @@ fetch_data() {
     CACHE_SYSTEM=$(curl -s --connect-timeout 1 "${API_SERVER}/api/system/status" 2>/dev/null)
 }
 
-# 화면 그리기
+# 화면 그리기 (한번에 출력)
 draw() {
     get_size
     local refresh=$((CACHE_INTERVAL - ($(date +%s) - CACHE_TIME)))
@@ -118,35 +84,50 @@ draw() {
     esac
     CAT_FRAME=$((CAT_FRAME + 1))
     
-    clear
+    # 전체 화면을 하나의 문자열로 생성
+    local screen=""
+    local line_sep="+$(rep '-' $((COLS-2)))+"
     
     # 헤더
-    line "$BRIGHT_MAGENTA"
-    center "${BRIGHT_YELLOW}${cat_face}${RESET} ${BOLD}MyAPI Dashboard${RESET} ${BRIGHT_YELLOW}${cat_face}${RESET}" "$BRIGHT_MAGENTA"
-    center "${DIM}$(date '+%Y-%m-%d %H:%M:%S')${RESET}  |  ${BRIGHT_CYAN}Refresh: ${refresh}s${RESET}" "$BRIGHT_MAGENTA"
-    line "$BRIGHT_MAGENTA"
+    screen+="${BRIGHT_MAGENTA}${line_sep}${RESET}\n"
+    
+    local title="${BRIGHT_YELLOW}${cat_face}${RESET} ${BOLD}MyAPI 대시보드${RESET} ${BRIGHT_YELLOW}${cat_face}${RESET}"
+    local title_plain="${cat_face} MyAPI 대시보드 ${cat_face}"
+    local title_pad=$(( (COLS - 2 - ${#title_plain} - 4) / 2 ))
+    screen+="${BRIGHT_MAGENTA}|${RESET}$(rep ' ' $title_pad)${title}$(rep ' ' $((COLS - 2 - title_pad - ${#title_plain} - 4)))${BRIGHT_MAGENTA}|${RESET}\n"
+    
+    local time_str="$(date '+%Y-%m-%d %H:%M:%S')  |  갱신: ${refresh}초"
+    local time_pad=$(( (COLS - 2 - ${#time_str} - 2) / 2 ))
+    screen+="${BRIGHT_MAGENTA}|${RESET}$(rep ' ' $time_pad)${DIM}${time_str}${RESET}$(rep ' ' $((COLS - 2 - time_pad - ${#time_str} - 2)))${BRIGHT_MAGENTA}|${RESET}\n"
+    
+    screen+="${BRIGHT_MAGENTA}${line_sep}${RESET}\n"
     
     # 위치 날씨
-    local loc="Loading..."
+    local loc="로딩중..."
     if [ -n "$CACHE_LOCATION" ] && [[ "$CACHE_LOCATION" == *"weather"* ]]; then
         loc=$(echo "$CACHE_LOCATION" | python3 -c "import sys,json;print(json.load(sys.stdin).get('weather','N/A'))" 2>/dev/null)
     fi
-    center "${WHITE}@ ${loc}${RESET}" "$DIM"
-    line "$BRIGHT_YELLOW"
+    local loc_text="@ ${loc}"
+    local loc_pad=$(( (COLS - 2 - ${#loc_text}) / 2 ))
+    screen+="${DIM}|${RESET}$(rep ' ' $loc_pad)${WHITE}${loc_text}${RESET}$(rep ' ' $((COLS - 2 - loc_pad - ${#loc_text})))${DIM}|${RESET}\n"
     
-    # 주식
-    center "${BOLD}${BRIGHT_YELLOW}[ Stock Prices ]${RESET}" "$BRIGHT_YELLOW"
-    line "$BRIGHT_YELLOW"
+    # 주식 섹션
+    screen+="${BRIGHT_YELLOW}${line_sep}${RESET}\n"
+    local stock_title="[ 미국 주식 정보 ]"
+    local stock_pad=$(( (COLS - 2 - ${#stock_title} - 6) / 2 ))
+    screen+="${BRIGHT_YELLOW}|${RESET}$(rep ' ' $stock_pad)${BOLD}${BRIGHT_YELLOW}${stock_title}${RESET}$(rep ' ' $((COLS - 2 - stock_pad - ${#stock_title} - 6)))${BRIGHT_YELLOW}|${RESET}\n"
+    screen+="${BRIGHT_YELLOW}${line_sep}${RESET}\n"
     
-    local symbols=("SPY" "QQQ" "NVDA" "TSLA" "SNPS" "REKR" "SMCX" "ETHU" "BITX" "GLDM")
-    local names=("S&P500 ETF" "NASDAQ 100" "NVIDIA" "TESLA" "Synopsys" "Rekor" "SMC Corp" "Ether 2X" "Bitcoin 2X" "Gold ETF")
+    # 주식 티커 및 한글명 (12개)
+    local symbols=("SPY" "QLD" "NVDA" "TSLA" "SNPS" "REKR" "SMCX" "ETHU" "BITX" "GLDM" "XXRP" "SOLT")
+    local names=("S&P500 ETF" "나스닥 2배" "엔비디아" "테슬라" "시놉시스" "레코르" "SMC 코프" "이더리움2배" "비트코인2배" "금 ETF" "리플 ETF" "솔라나 ETF")
     
     for i in "${!symbols[@]}"; do
         local sym="${symbols[$i]}"
         local name="${names[$i]}"
         local raw=$(echo "$CACHE_STOCKS" | grep -o "${sym}|[^;]*" | cut -d'|' -f2)
         
-        local price="---.--" chg="+0.00" pct="+0.00" color="$WHITE" arrow=" "
+        local price="---.--" chg="+0.00" pct="+0.00" color="$WHITE"
         if [ -n "$raw" ] && [[ "$raw" == *"{"* ]]; then
             read price chg pct <<< $(echo "$raw" | python3 -c "
 import sys,json
@@ -156,23 +137,38 @@ try:
 except: print('0 0 0')
 " 2>/dev/null)
             if [[ "$chg" == +* ]] && [ "$chg" != "+0.00" ]; then
-                color="$BRIGHT_GREEN"; arrow="+"
+                color="$BRIGHT_GREEN"
             elif [[ "$chg" == -* ]]; then
-                color="$BRIGHT_RED"; arrow=""
+                color="$BRIGHT_RED"
             fi
         fi
-        txt "$(printf "${CYAN}%-6s${RESET} %-10s ${color}\$%-9s %s%-7s (%s%%)${RESET}" "$sym" "$name" "$price" "$arrow" "$chg" "$pct")"
+        local stock_line=$(printf " ${CYAN}%-5s${RESET} %-10s ${color}\$%-8s %+-7s (%s%%)${RESET}" "$sym" "$name" "$price" "$chg" "$pct")
+        local stock_plain=$(printf " %-5s %-10s \$%-8s %+-7s (%s%%)" "$sym" "$name" "$price" "$chg" "$pct")
+        local stock_rpad=$((COLS - 3 - ${#stock_plain} - 6))
+        [ $stock_rpad -lt 0 ] && stock_rpad=0
+        screen+="${BRIGHT_YELLOW}|${RESET}${stock_line}$(rep ' ' $stock_rpad)${BRIGHT_YELLOW}|${RESET}\n"
     done
     
-    # 날씨
-    line "$BRIGHT_BLUE"
-    center "${BOLD}${BRIGHT_BLUE}[ Korea Weather ]${RESET}" "$BRIGHT_BLUE"
-    line "$BRIGHT_BLUE"
+    # 날씨 섹션
+    screen+="${BRIGHT_BLUE}${line_sep}${RESET}\n"
+    local weather_title="[ 한국 날씨 ]"
+    local weather_pad=$(( (COLS - 2 - ${#weather_title} - 4) / 2 ))
+    screen+="${BRIGHT_BLUE}|${RESET}$(rep ' ' $weather_pad)${BOLD}${BRIGHT_BLUE}${weather_title}${RESET}$(rep ' ' $((COLS - 2 - weather_pad - ${#weather_title} - 4)))${BRIGHT_BLUE}|${RESET}\n"
+    screen+="${BRIGHT_BLUE}${line_sep}${RESET}\n"
     
     if [ -n "$CACHE_WEATHER" ] && [[ "$CACHE_WEATHER" == *"["* ]]; then
-        echo "$CACHE_WEATHER" | python3 -c "
+        local weather_lines=$(echo "$CACHE_WEATHER" | python3 -c "
 import sys,json
 data=json.load(sys.stdin)
+def icon(w):
+    w=w.lower() if w else ''
+    if 'clear' in w: return '*'
+    elif 'cloud' in w: return '#'
+    elif 'rain' in w or 'drizzle' in w: return '~'
+    elif 'snow' in w: return 'o'
+    elif 'mist' in w or 'fog' in w or 'haze' in w: return '='
+    elif 'thunder' in w: return '!'
+    return '-'
 def tc(t):
     if t<=0: return '\033[96m'
     elif t<=10: return '\033[94m'
@@ -182,24 +178,32 @@ def tc(t):
 r='\033[0m'
 b='\033[1m'
 d='\033[2m'
+y='\033[93m'
 for c in data:
     nm=c.get('cityKo','?')
     t=c.get('temperatureCelsius',0)
-    w=c.get('weather','')[:5]
+    w=c.get('weather','')
     h=c.get('humidity',0)
-    print(f'{b}{nm:4}{r} {tc(t)}{t:5.1f}C{r} {d}{w:5} {h}%{r}')
-" 2>/dev/null | while read wline; do
-            txt "  $wline"
-        done
+    ic=icon(w)
+    print(f' {y}[{ic}]{r} {b}{nm:4}{r} {tc(t)}{t:5.1f}C{r} {d}습도{h:2}%{r}')
+" 2>/dev/null)
+        while IFS= read -r wline; do
+            local wplain=$(echo -e "$wline" | sed 's/\x1b\[[0-9;]*m//g')
+            local wrpad=$((COLS - 3 - ${#wplain}))
+            [ $wrpad -lt 0 ] && wrpad=0
+            screen+="${BRIGHT_BLUE}|${RESET}${wline}$(rep ' ' $wrpad)${BRIGHT_BLUE}|${RESET}\n"
+        done <<< "$weather_lines"
     fi
     
-    # 시스템
-    line "$BRIGHT_GREEN"
-    center "${BOLD}${BRIGHT_GREEN}[ System Status ]${RESET}" "$BRIGHT_GREEN"
-    line "$BRIGHT_GREEN"
+    # 시스템 섹션
+    screen+="${BRIGHT_GREEN}${line_sep}${RESET}\n"
+    local sys_title="[ 시스템 상태 ]"
+    local sys_pad=$(( (COLS - 2 - ${#sys_title} - 5) / 2 ))
+    screen+="${BRIGHT_GREEN}|${RESET}$(rep ' ' $sys_pad)${BOLD}${BRIGHT_GREEN}${sys_title}${RESET}$(rep ' ' $((COLS - 2 - sys_pad - ${#sys_title} - 5)))${BRIGHT_GREEN}|${RESET}\n"
+    screen+="${BRIGHT_GREEN}${line_sep}${RESET}\n"
     
     if [ -n "$CACHE_SYSTEM" ] && [[ "$CACHE_SYSTEM" == *"{"* ]]; then
-        echo "$CACHE_SYSTEM" | python3 -c "
+        local sys_lines=$(echo "$CACHE_SYSTEM" | python3 -c "
 import sys,json
 d=json.load(sys.stdin)
 def fmt(b):
@@ -207,7 +211,7 @@ def fmt(b):
         if b<1024: return f'{b:.1f}{u}'
         b/=1024
     return f'{b:.1f}TB'
-def bar(p,w=20):
+def bar(p,w=15):
     f=int(p/100*w)
     g,y,r,rs='\033[92m','\033[93m','\033[91m','\033[0m'
     c=g if p<60 else y if p<80 else r
@@ -223,34 +227,42 @@ hp=d.get('heapUsagePercent',0)
 hu=d.get('heapUsed',0)
 hm=d.get('heapMax',0)
 th=d.get('threadCount',0)
-pk=d.get('peakThreadCount',0)
 gc=d.get('gcCount',0)
 gt=d.get('gcTime',0)
-cl=d.get('loadedClassCount',0)
 up=d.get('uptimeMillis',0)//1000
-print(f'{b}CPU{rs}     {cpu:5.1f}% {bar(cpu)}')
-print(f'{b}Process{rs} {pcpu:5.1f}% {bar(pcpu)}')
-print(f'{b}Memory{rs}  {mem:5.1f}% {bar(mem)} {fmt(mu)}/{fmt(mt)}')
-print(f'{b}Heap{rs}    {hp:5.1f}% {bar(hp)} {fmt(hu)}/{fmt(hm)}')
-print(f'{b}Thread{rs}  {th} (peak {pk})  {b}GC{rs} {gc}x/{gt}ms  {b}Class{rs} {cl}')
-print(f'{b}Uptime{rs}  {up//3600}h {(up%3600)//60}m {up%60}s')
-" 2>/dev/null | while read sline; do
-            txt "  $sline"
-        done
+print(f' {b}CPU{rs}      {cpu:5.1f}% {bar(cpu)}')
+print(f' {b}프로세스{rs}  {pcpu:5.1f}% {bar(pcpu)}')
+print(f' {b}메모리{rs}    {mem:5.1f}% {bar(mem)} {fmt(mu)}/{fmt(mt)}')
+print(f' {b}힙{rs}        {hp:5.1f}% {bar(hp)} {fmt(hu)}/{fmt(hm)}')
+print(f' {b}스레드{rs} {th}  {b}GC{rs} {gc}회/{gt}ms  {b}업타임{rs} {up//3600}시간{(up%3600)//60}분{up%60}초')
+" 2>/dev/null)
+        while IFS= read -r sline; do
+            local splain=$(echo -e "$sline" | sed 's/\x1b\[[0-9;]*m//g')
+            local srpad=$((COLS - 3 - ${#splain} + 5))
+            [ $srpad -lt 0 ] && srpad=0
+            screen+="${BRIGHT_GREEN}|${RESET}${sline}$(rep ' ' $srpad)${BRIGHT_GREEN}|${RESET}\n"
+        done <<< "$sys_lines"
     else
-        txt "  Loading system info..."
+        screen+="${BRIGHT_GREEN}|${RESET} 로딩중...$(rep ' ' $((COLS - 14)))${BRIGHT_GREEN}|${RESET}\n"
     fi
     
     # 푸터
-    line "$BRIGHT_MAGENTA"
-    center "${DIM}Server: ${API_SERVER}  |  Ctrl+C to exit${RESET}" "$BRIGHT_MAGENTA"
-    line "$BRIGHT_MAGENTA"
+    screen+="${BRIGHT_MAGENTA}${line_sep}${RESET}\n"
+    local footer="서버: ${API_SERVER}  |  종료: Ctrl+C"
+    local footer_pad=$(( (COLS - 2 - ${#footer}) / 2 ))
+    screen+="${BRIGHT_MAGENTA}|${RESET}$(rep ' ' $footer_pad)${DIM}${footer}${RESET}$(rep ' ' $((COLS - 2 - footer_pad - ${#footer})))${BRIGHT_MAGENTA}|${RESET}\n"
+    screen+="${BRIGHT_MAGENTA}${line_sep}${RESET}\n"
+    
+    # 커서를 맨 위로 이동 후 한번에 출력
+    tput cup 0 0 2>/dev/null
+    echo -e "$screen"
 }
 
 # 메인
 main() {
+    clear
     tput civis 2>/dev/null
-    trap 'tput cnorm 2>/dev/null; clear; echo "Bye!"; exit 0' INT TERM
+    trap 'tput cnorm 2>/dev/null; clear; echo "종료!"; exit 0' INT TERM
     
     fetch_data
     while true; do
@@ -262,8 +274,8 @@ main() {
 
 # 도움말
 if [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
-    echo "Usage: ./dashboard.sh [-s SERVER_URL]"
-    echo "  -s, --server  API server (default: http://localhost:8080)"
+    echo "사용법: ./dashboard.sh [-s 서버주소]"
+    echo "  -s, --server  API 서버 (기본: http://localhost:8080)"
     exit 0
 fi
 
