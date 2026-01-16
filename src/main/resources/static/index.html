@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyAPI Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0d0d0d;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #252525;
+            --border-color: #3d3d3d;
+            --border-accent: #5c5c5c;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666;
+            --accent-yellow: #ffd700;
+            --accent-cyan: #00d4ff;
+            --accent-green: #00ff88;
+            --accent-red: #ff4757;
+            --accent-magenta: #ff6bd6;
+            --accent-purple: #a855f7;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'Noto Sans KR', monospace;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 420px;
+            height: 100vh;
+            gap: 0;
+        }
+
+        /* Left: YouTube */
+        .youtube-section {
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .youtube-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .youtube-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 8px;
+        }
+
+        /* Right: Dashboard */
+        .dashboard-section {
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .dashboard-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-tertiary);
+        }
+
+        .dashboard-title {
+            color: var(--accent-cyan);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .dashboard-time {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        /* Settings Button */
+        .settings-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .settings-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        /* Dashboard Content */
+        .dashboard-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .dashboard-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .dashboard-content::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        .dashboard-content::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        /* Section */
+        .section {
+            border-bottom: 1px dashed var(--border-color);
+            padding: 12px 16px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .section-title {
+            color: var(--accent-yellow);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .section-meta {
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+
+        /* Stocks */
+        .stock-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            font-size: 11px;
+        }
+
+        .stock-item {
+            display: grid;
+            grid-template-columns: 55px 50px 65px 85px;
+            gap: 4px;
+            padding: 3px 0;
+            align-items: center;
+        }
+
+        .stock-symbol {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .stock-name {
+            color: var(--text-secondary);
+            font-size: 10px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .stock-price {
+            color: var(--text-primary);
+            text-align: right;
+        }
+
+        .stock-change {
+            text-align: right;
+            font-size: 10px;
+        }
+
+        .stock-change.positive {
+            color: var(--accent-green);
+        }
+
+        .stock-change.negative {
+            color: var(--accent-red);
+        }
+
+        /* Weather */
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            font-size: 11px;
+        }
+
+        .weather-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        .weather-city {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .weather-icon {
+            font-size: 12px;
+        }
+
+        .weather-city-name {
+            color: var(--text-primary);
+        }
+
+        .weather-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .weather-temp {
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+
+        .weather-humidity {
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+
+        /* News */
+        .news-list {
+            font-size: 11px;
+        }
+
+        .news-item {
+            padding: 6px 0;
+            border-bottom: 1px dotted var(--border-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .news-item:last-child {
+            border-bottom: none;
+        }
+
+        .news-item:hover {
+            background: var(--bg-tertiary);
+            margin: 0 -8px;
+            padding: 6px 8px;
+        }
+
+        .news-title {
+            color: var(--text-primary);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .news-meta {
+            color: var(--text-muted);
+            font-size: 9px;
+            margin-top: 2px;
+        }
+
+        .news-section-title {
+            color: var(--accent-magenta);
+            font-size: 10px;
+            font-weight: 600;
+            margin: 10px 0 6px 0;
+            padding-top: 8px;
+            border-top: 1px dotted var(--border-color);
+        }
+
+        .news-section-title:first-child {
+            margin-top: 0;
+            padding-top: 0;
+            border-top: none;
+        }
+
+        /* System */
+        .system-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .system-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .system-label {
+            color: var(--text-secondary);
+        }
+
+        .system-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .system-bar {
+            grid-column: span 2;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bar-label {
+            color: var(--text-secondary);
+            width: 40px;
+        }
+
+        .bar-container {
+            flex: 1;
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            background: var(--accent-green);
+            transition: width 0.3s ease;
+        }
+
+        .bar-fill.warning {
+            background: var(--accent-yellow);
+        }
+
+        .bar-fill.danger {
+            background: var(--accent-red);
+        }
+
+        .bar-value {
+            color: var(--text-primary);
+            width: 50px;
+            text-align: right;
+            font-size: 10px;
+        }
+
+        /* Server Info */
+        .server-info {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+            font-size: 10px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* Settings Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            color: var(--accent-cyan);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--accent-red);
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 11px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 12px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .ticker-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ticker-item {
+            display: grid;
+            grid-template-columns: 100px 1fr 32px;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .ticker-remove {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--accent-red);
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .ticker-remove:hover {
+            background: var(--accent-red);
+            color: white;
+            border-color: var(--accent-red);
+        }
+
+        .add-ticker-btn {
+            background: transparent;
+            border: 1px dashed var(--border-color);
+            color: var(--text-secondary);
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            transition: all 0.2s;
+            margin-top: 8px;
+        }
+
+        .add-ticker-btn:hover {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            border: 1px solid var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: transparent;
+            color: var(--accent-cyan);
+        }
+
+        /* Connection Status */
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+
+        .status-dot.connected {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        .status-dot.disconnected {
+            background: var(--accent-red);
+        }
+
+        .status-text {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-muted);
+        }
+
+        .loading::after {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* No data */
+        .no-data {
+            color: var(--text-muted);
+            font-size: 11px;
+            font-style: italic;
+            padding: 8px 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 45vh 1fr;
+            }
+
+            .dashboard-section {
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- YouTube Section -->
+        <section class="youtube-section">
+            <div class="youtube-wrapper">
+                <iframe 
+                    id="youtube-player"
+                    src=""
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </section>
+
+        <!-- Dashboard Section -->
+        <section class="dashboard-section">
+            <header class="dashboard-header">
+                <div>
+                    <div class="dashboard-title">MyAPI Dashboard</div>
+                    <div class="dashboard-time" id="current-time"></div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="connection-status">
+                        <div class="status-dot" id="status-dot"></div>
+                        <span class="status-text" id="status-text">연결 중...</span>
+                    </div>
+                    <button class="settings-btn" onclick="openSettings()">⚙ 설정</button>
+                </div>
+            </header>
+
+            <div class="dashboard-content">
+                <!-- Stocks Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <span class="section-title">[ STOCKS ]</span>
+                        <span class="section-meta" id="stocks-refresh"></span>
+                    </div>
+                    <div class="stock-grid" id="stocks-container">
+                        <div class="loading">데이터 로딩 중</div>
+                    </div>
+                </div>
+
+                <!-- Weather Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <span class="section-title">[ WEATHER ]</span>
+                        <span class="section-meta" id="weather-refresh"></span>
+                    </div>
+                    <div class="weather-grid" id="weather-container">
+                        <div class="loading">데이터 로딩 중</div>
+                    </div>
+                </div>
+
+                <!-- News Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <span class="section-title">[ NEWS ]</span>
+                        <span class="section-meta" id="news-refresh"></span>
+                    </div>
+                    <div class="news-list" id="news-container">
+                        <div class="loading">데이터 로딩 중</div>
+                    </div>
+                </div>
+
+                <!-- System Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <span class="section-title">[ SYSTEM ]</span>
+                        <span class="section-meta">(real-time)</span>
+                    </div>
+                    <div class="system-grid" id="system-container">
+                        <div class="loading">데이터 로딩 중</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="server-info">
+                Server: http://localhost:8080 | Exit: Ctrl+C
+            </div>
+        </section>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">⚙ Dashboard Settings</span>
+                <button class="modal-close" onclick="closeSettings()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">YouTube URL</label>
+                    <input type="text" class="form-input" id="youtube-url" 
+                           placeholder="https://www.youtube.com/watch?v=...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stock Tickers</label>
+                    <div class="ticker-list" id="ticker-list"></div>
+                    <button class="add-ticker-btn" onclick="addTicker()">+ Add Ticker</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSettings()">취소</button>
+                <button class="btn btn-primary" onclick="saveSettings()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let config = null;
+        let eventSource = null;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 10;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTime();
+            setInterval(updateTime, 1000);
+            loadConfig();
+        });
+
+        // Time display
+        function updateTime() {
+            const now = new Date();
+            const formatted = now.toISOString().replace('T', ' ').substring(0, 19);
+            document.getElementById('current-time').textContent = formatted;
+        }
+
+        // Load config and start SSE
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/dashboard/config');
+                config = await response.json();
+                updateYouTubePlayer(config.youtubeUrl);
+                connectSSE();
+            } catch (error) {
+                console.error('Failed to load config:', error);
+                // Use default config
+                config = {
+                    youtubeUrl: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
+                    tickers: [
+                        { symbol: 'SPY', name: 'S&P500' },
+                        { symbol: 'QLD', name: 'NAS2X' },
+                        { symbol: 'NVDA', name: 'NVIDIA' }
+                    ]
+                };
+                updateYouTubePlayer(config.youtubeUrl);
+                connectSSE();
+            }
+        }
+
+        // YouTube player
+        function updateYouTubePlayer(url) {
+            const videoId = extractYouTubeId(url);
+            const player = document.getElementById('youtube-player');
+            if (videoId) {
+                player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
+            }
+        }
+
+        function extractYouTubeId(url) {
+            if (!url) return null;
+            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/);
+            return match ? match[1] : null;
+        }
+
+        // SSE Connection
+        function connectSSE() {
+            if (eventSource) {
+                eventSource.close();
+            }
+
+            updateConnectionStatus('connecting');
+            eventSource = new EventSource('/api/dashboard/stream');
+
+            eventSource.onopen = () => {
+                console.log('SSE Connected');
+                reconnectAttempts = 0;
+                updateConnectionStatus('connected');
+            };
+
+            eventSource.addEventListener('dashboard', (event) => {
+                const data = JSON.parse(event.data);
+                handleDashboardData(data);
+            });
+
+            eventSource.addEventListener('system', (event) => {
+                const data = JSON.parse(event.data);
+                if (data.system) {
+                    renderSystem(data.system);
+                }
+            });
+
+            eventSource.onerror = (error) => {
+                console.error('SSE Error:', error);
+                updateConnectionStatus('disconnected');
+                eventSource.close();
+
+                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
+                    setTimeout(connectSSE, delay);
+                }
+            };
+        }
+
+        function updateConnectionStatus(status) {
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('status-text');
+
+            dot.className = 'status-dot';
+            
+            switch (status) {
+                case 'connected':
+                    dot.classList.add('connected');
+                    text.textContent = '연결됨';
+                    break;
+                case 'disconnected':
+                    dot.classList.add('disconnected');
+                    text.textContent = '연결 끊김';
+                    break;
+                default:
+                    text.textContent = '연결 중...';
+            }
+        }
+
+        // Handle incoming data
+        function handleDashboardData(data) {
+            if (data.stocks) {
+                renderStocks(data.stocks);
+            }
+            if (data.weather) {
+                renderWeather(data.weather);
+            }
+            if (data.news) {
+                renderNews(data.news);
+            }
+            if (data.system) {
+                renderSystem(data.system);
+            }
+        }
+
+        // Render Stocks
+        function renderStocks(stocksData) {
+            const container = document.getElementById('stocks-container');
+            const refreshEl = document.getElementById('stocks-refresh');
+
+            if (!stocksData.quotes || stocksData.quotes.length === 0) {
+                container.innerHTML = '<div class="no-data">데이터 없음</div>';
+                return;
+            }
+
+            const html = stocksData.quotes.map(stock => {
+                const price = stock.currentPrice != null ? stock.currentPrice.toFixed(2) : 'N/A';
+                const change = stock.change != null ? stock.change.toFixed(2) : '0.00';
+                const percent = stock.percentChange != null ? stock.percentChange.toFixed(2) : '0.00';
+                const isPositive = stock.change >= 0;
+                const sign = isPositive ? '+' : '';
+                const changeClass = isPositive ? 'positive' : 'negative';
+
+                return `
+                    <div class="stock-item">
+                        <span class="stock-symbol">${stock.symbol}</span>
+                        <span class="stock-name">${stock.name || ''}</span>
+                        <span class="stock-price">$ ${price}</span>
+                        <span class="stock-change ${changeClass}">${sign}${change} (${sign}${percent}%)</span>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+            refreshEl.textContent = `(refresh: ${formatRefreshTime(stocksData.fetchedAt)})`;
+        }
+
+        // Render Weather
+        function renderWeather(weatherData) {
+            const container = document.getElementById('weather-container');
+            const refreshEl = document.getElementById('weather-refresh');
+
+            if (!weatherData || weatherData.length === 0) {
+                container.innerHTML = '<div class="no-data">데이터 없음</div>';
+                return;
+            }
+
+            const weatherIcons = {
+                'Clear': '☀',
+                'Clouds': '☁',
+                'Rain': '🌧',
+                'Drizzle': '🌦',
+                'Thunderstorm': '⛈',
+                'Snow': '❄',
+                'Mist': '🌫',
+                'Fog': '🌫',
+                'Haze': '🌫'
+            };
+
+            const html = weatherData.map(w => {
+                const icon = weatherIcons[w.weather] || '☁';
+                const temp = w.temperatureCelsius.toFixed(1);
+
+                return `
+                    <div class="weather-item">
+                        <div class="weather-city">
+                            <span class="weather-icon">${icon}</span>
+                            <span class="weather-city-name">${w.cityKo || w.city}</span>
+                        </div>
+                        <div class="weather-info">
+                            <span class="weather-temp">${temp}C</span>
+                            <span class="weather-humidity">${w.humidity}%</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+            refreshEl.textContent = `(refresh: 60s)`;
+        }
+
+        // Render News
+        function renderNews(newsData) {
+            const container = document.getElementById('news-container');
+            const refreshEl = document.getElementById('news-refresh');
+
+            let html = '';
+
+            // Yahoo News
+            html += '<div class="news-section-title">📈 YAHOO FINANCE</div>';
+            if (newsData.yahooNews && newsData.yahooNews.length > 0) {
+                html += newsData.yahooNews.map(news => `
+                    <div class="news-item" onclick="window.open('${news.link}', '_blank')">
+                        <div class="news-title">${escapeHtml(news.title)}</div>
+                        <div class="news-meta">${news.pubDate || ''}</div>
+                    </div>
+                `).join('');
+            } else {
+                html += '<div class="no-data">No news</div>';
+            }
+
+            // Yonhap News
+            html += '<div class="news-section-title">📰 연합뉴스</div>';
+            if (newsData.yonhapNews && newsData.yonhapNews.length > 0) {
+                html += newsData.yonhapNews.map(news => `
+                    <div class="news-item" onclick="window.open('${news.link}', '_blank')">
+                        <div class="news-title">${escapeHtml(news.title)}</div>
+                        <div class="news-meta">${news.pubDate || ''}</div>
+                    </div>
+                `).join('');
+            } else {
+                html += '<div class="no-data">뉴스 없음</div>';
+            }
+
+            container.innerHTML = html;
+            refreshEl.textContent = `(refresh: ${formatRefreshTime(newsData.fetchedAt)})`;
+        }
+
+        // Render System
+        function renderSystem(systemData) {
+            const container = document.getElementById('system-container');
+
+            const cpuPercent = systemData.cpuUsage >= 0 ? systemData.cpuUsage.toFixed(1) : 'N/A';
+            const memPercent = systemData.memoryUsagePercent.toFixed(1);
+            const heapPercent = systemData.heapUsagePercent.toFixed(1);
+            const uptime = formatUptime(systemData.uptimeMillis);
+
+            const getCpuBarClass = (val) => val > 80 ? 'danger' : val > 50 ? 'warning' : '';
+            const getMemBarClass = (val) => val > 90 ? 'danger' : val > 70 ? 'warning' : '';
+
+            const html = `
+                <div class="system-bar">
+                    <span class="bar-label">CPU</span>
+                    <div class="bar-container">
+                        <div class="bar-fill ${getCpuBarClass(systemData.cpuUsage)}" style="width: ${Math.min(systemData.cpuUsage, 100)}%"></div>
+                    </div>
+                    <span class="bar-value">${cpuPercent}%</span>
+                </div>
+                <div class="system-bar">
+                    <span class="bar-label">MEM</span>
+                    <div class="bar-container">
+                        <div class="bar-fill ${getMemBarClass(systemData.memoryUsagePercent)}" style="width: ${memPercent}%"></div>
+                    </div>
+                    <span class="bar-value">${formatBytes(systemData.memoryUsed)}/${formatBytes(systemData.memoryTotal)}</span>
+                </div>
+                <div class="system-bar">
+                    <span class="bar-label">HEAP</span>
+                    <div class="bar-container">
+                        <div class="bar-fill ${getMemBarClass(systemData.heapUsagePercent)}" style="width: ${heapPercent}%"></div>
+                    </div>
+                    <span class="bar-value">${formatBytes(systemData.heapUsed)}/${formatBytes(systemData.heapMax)}</span>
+                </div>
+                <div class="system-item">
+                    <span class="system-label">THR</span>
+                    <span class="system-value">${systemData.threadCount}</span>
+                </div>
+                <div class="system-item">
+                    <span class="system-label">GC</span>
+                    <span class="system-value">${systemData.gcCount}/${systemData.gcTime}ms</span>
+                </div>
+                <div class="system-item">
+                    <span class="system-label">UP</span>
+                    <span class="system-value">${uptime}</span>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // Settings Modal
+        function openSettings() {
+            const modal = document.getElementById('settings-modal');
+            const urlInput = document.getElementById('youtube-url');
+            const tickerList = document.getElementById('ticker-list');
+
+            urlInput.value = config?.youtubeUrl || '';
+
+            tickerList.innerHTML = '';
+            (config?.tickers || []).forEach((ticker, index) => {
+                addTickerRow(ticker.symbol, ticker.name);
+            });
+
+            modal.classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.remove('active');
+        }
+
+        function addTicker() {
+            addTickerRow('', '');
+        }
+
+        function addTickerRow(symbol = '', name = '') {
+            const tickerList = document.getElementById('ticker-list');
+            const row = document.createElement('div');
+            row.className = 'ticker-item';
+            row.innerHTML = `
+                <input type="text" class="form-input ticker-symbol" placeholder="AAPL" value="${escapeHtml(symbol)}">
+                <input type="text" class="form-input ticker-name" placeholder="Apple Inc." value="${escapeHtml(name)}">
+                <button class="ticker-remove" onclick="this.parentElement.remove()">×</button>
+            `;
+            tickerList.appendChild(row);
+        }
+
+        async function saveSettings() {
+            const youtubeUrl = document.getElementById('youtube-url').value;
+            const tickerRows = document.querySelectorAll('.ticker-item');
+            const tickers = [];
+
+            tickerRows.forEach(row => {
+                const symbol = row.querySelector('.ticker-symbol').value.trim().toUpperCase();
+                const name = row.querySelector('.ticker-name').value.trim();
+                if (symbol) {
+                    tickers.push({ symbol, name });
+                }
+            });
+
+            const newConfig = { youtubeUrl, tickers };
+
+            try {
+                const response = await fetch('/api/dashboard/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newConfig)
+                });
+
+                if (response.ok) {
+                    config = await response.json();
+                    updateYouTubePlayer(config.youtubeUrl);
+                    closeSettings();
+                } else {
+                    alert('설정 저장 실패');
+                }
+            } catch (error) {
+                console.error('Failed to save settings:', error);
+                alert('설정 저장 실패: ' + error.message);
+            }
+        }
+
+        // Utilities
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0B';
+            const k = 1024;
+            const sizes = ['B', 'K', 'M', 'G', 'T'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(0)) + sizes[i];
+        }
+
+        function formatUptime(millis) {
+            const seconds = Math.floor(millis / 1000);
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hours}h${minutes}m${secs}s`;
+        }
+
+        function formatRefreshTime(timestamp) {
+            if (!timestamp) return 'N/A';
+            const date = new Date(timestamp);
+            const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+            if (seconds < 60) return `${seconds}s`;
+            return `${Math.floor(seconds / 60)}m${seconds % 60}s`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Close modal on outside click
+        document.getElementById('settings-modal').addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay')) {
+                closeSettings();
+            }
+        });
+
+        // Keyboard shortcut
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeSettings();
+            }
+        });
+    </script>
+</body>
+</html>
