@@ -2,10 +2,7 @@
 
 #############################################
 # MyAPI 실시간 대시보드
-# 주식 정보 + 날씨 정보 터미널 대시보드
-#
-# - 화면: 매초 갱신
-# - 데이터: 60초마다 갱신 (서버 캐시)
+# 주식 정보 + 날씨 정보 + 시스템 상태
 #############################################
 
 # 서버 주소 설정
@@ -16,7 +13,6 @@ RESET='\033[0m'
 BOLD='\033[1m'
 DIM='\033[2m'
 
-# 전경색
 BLACK='\033[30m'
 RED='\033[31m'
 GREEN='\033[32m'
@@ -26,7 +22,6 @@ MAGENTA='\033[35m'
 CYAN='\033[36m'
 WHITE='\033[37m'
 
-# 밝은 색상
 BRIGHT_RED='\033[91m'
 BRIGHT_GREEN='\033[92m'
 BRIGHT_YELLOW='\033[93m'
@@ -38,291 +33,262 @@ BRIGHT_CYAN='\033[96m'
 CACHE_LOCATION=""
 CACHE_STOCKS=""
 CACHE_WEATHER=""
+CACHE_SYSTEM=""
 CACHE_TIME=0
-CACHE_INTERVAL=60  # 60초마다 데이터 갱신
+CACHE_INTERVAL=60
 
-# 터미널 크기 가져오기
+# 고양이 애니메이션 프레임
+CAT_FRAME=0
+declare -a CAT_FRAMES
+CAT_FRAMES[0]='  /\_/\   ~nyaong~
+ ( o.o )  
+  > ^ <  ==========='
+CAT_FRAMES[1]='  /\_/\   ~nyaong~
+ ( -.- )  zzZ
+  > ^ <  ==========='
+CAT_FRAMES[2]='   /\_/\  
+  ( o.o ) )
+ ~(  ^ )~ ==========='
+CAT_FRAMES[3]='    /\_/\ 
+   ( ^.^ )
+  ~(> < )~==========='
+
+# 터미널 크기
 get_terminal_size() {
     TERM_WIDTH=$(tput cols)
     TERM_HEIGHT=$(tput lines)
+    [ $TERM_WIDTH -lt 80 ] && TERM_WIDTH=80
 }
 
-# 중앙 정렬 출력
-print_center() {
+# 반복 문자 출력
+repeat_char() {
+    local char="$1"
+    local count="$2"
+    printf "%${count}s" | tr ' ' "$char"
+}
+
+# 중앙 정렬
+center_text() {
     local text="$1"
-    local color="${2:-$RESET}"
-    local plain_text=$(echo -e "$text" | sed 's/\x1b\[[0-9;]*m//g')
-    local text_len=${#plain_text}
-    local padding=$(( (TERM_WIDTH - text_len) / 2 ))
-    [ $padding -lt 0 ] && padding=0
-    printf "%${padding}s" ""
-    echo -e "${color}${text}${RESET}"
+    local width="$2"
+    local plain=$(echo -e "$text" | sed 's/\x1b\[[0-9;]*m//g')
+    local len=${#plain}
+    local pad=$(( (width - len) / 2 ))
+    [ $pad -lt 0 ] && pad=0
+    printf "%${pad}s%s" "" "$text"
 }
 
-# 구분선 출력
-print_line() {
+# 전체 너비 라인
+full_line() {
     local char="${1:-─}"
     local color="${2:-$DIM}"
-    echo -e "${color}$(printf '%*s' "$TERM_WIDTH" '' | tr ' ' "$char")${RESET}"
+    echo -e "${color}$(repeat_char "$char" $TERM_WIDTH)${RESET}"
 }
 
-# 박스 헤더
-print_header() {
-    local title="$1"
-    local color="${2:-$BRIGHT_CYAN}"
-    echo ""
-    print_line "═" "$color"
-    print_center "  $title  " "${BOLD}${color}"
-    print_line "═" "$color"
-}
-
-# 데이터 새로고침 필요 여부 확인
+# 데이터 갱신 필요 여부
 need_refresh() {
     local now=$(date +%s)
-    local diff=$((now - CACHE_TIME))
-    [ $diff -ge $CACHE_INTERVAL ]
+    [ $((now - CACHE_TIME)) -ge $CACHE_INTERVAL ]
 }
 
-# 모든 데이터 가져오기 (캐시)
+# 데이터 가져오기
 fetch_all_data() {
     if need_refresh; then
-        # 위치 날씨 (서버 캐시)
-        CACHE_LOCATION=$(curl -s --connect-timeout 3 "${API_SERVER}/api/location/weather" 2>/dev/null)
+        CACHE_LOCATION=$(curl -s --connect-timeout 2 "${API_SERVER}/api/location/weather" 2>/dev/null)
         
-        # 주식 데이터 (병렬 호출)
         local symbols=("SPY" "QQQ" "NVDA" "SNPS" "REKR" "SMCX")
         CACHE_STOCKS=""
         for symbol in "${symbols[@]}"; do
-            local data=$(curl -s --connect-timeout 3 "${API_SERVER}/api/finnhub/quote?symbol=${symbol}" 2>/dev/null)
-            CACHE_STOCKS="${CACHE_STOCKS}${symbol}:${data}|"
+            local data=$(curl -s --connect-timeout 2 "${API_SERVER}/api/finnhub/quote?symbol=${symbol}" 2>/dev/null)
+            CACHE_STOCKS="${CACHE_STOCKS}${symbol}|${data};"
         done
         
-        # 날씨 데이터 (서버 캐시)
-        CACHE_WEATHER=$(curl -s --connect-timeout 3 "${API_SERVER}/api/weather" 2>/dev/null)
-        
+        CACHE_WEATHER=$(curl -s --connect-timeout 2 "${API_SERVER}/api/weather" 2>/dev/null)
+        CACHE_SYSTEM=$(curl -s --connect-timeout 2 "${API_SERVER}/api/system/status" 2>/dev/null)
         CACHE_TIME=$(date +%s)
     fi
 }
 
-# 현재 위치 정보 출력
-print_location() {
-    echo ""
-    if [ -n "$CACHE_LOCATION" ] && [[ "$CACHE_LOCATION" == *"{"* ]]; then
-        local weather=$(echo "$CACHE_LOCATION" | python3 -c "
-import sys, json
-try:
-    d = json.load(sys.stdin)
-    print(d.get('weather', d.get('rawResponse', '정보 없음')))
-except:
-    print('정보 없음')
-" 2>/dev/null)
-        print_center "📍 $weather" "${BOLD}${WHITE}"
-    else
-        print_center "📍 위치 정보 로딩 중..." "${DIM}"
-    fi
-}
-
-# 시간 정보 출력
-print_time() {
-    local current_time=$(date '+%Y년 %m월 %d일 %A %H:%M:%S')
+# 화면 그리기 (버퍼 사용)
+draw_screen() {
+    get_terminal_size
+    local output=""
     local next_refresh=$((CACHE_INTERVAL - ($(date +%s) - CACHE_TIME)))
     [ $next_refresh -lt 0 ] && next_refresh=0
-    print_center "🕐 $current_time  │  다음 갱신: ${next_refresh}초" "$DIM"
-}
-
-# 주식 섹션 출력
-print_stocks() {
-    print_header "📈 미국 주식 시세" "$BRIGHT_YELLOW"
-    echo ""
+    
+    # 고양이 프레임 업데이트
+    CAT_FRAME=$(( (CAT_FRAME + 1) % 4 ))
+    
+    # === 헤더 ===
+    output+="\n"
+    output+="${BRIGHT_CYAN}$(full_line '═')${RESET}\n"
+    output+="$(center_text "${BOLD}${BRIGHT_MAGENTA}  🐱 MyAPI 실시간 대시보드 | $(date '+%Y-%m-%d %H:%M:%S') | 갱신: ${next_refresh}초  ${RESET}" $TERM_WIDTH)\n"
+    output+="${BRIGHT_CYAN}$(full_line '═')${RESET}\n"
+    
+    # === 위치 날씨 ===
+    local loc_weather="정보 없음"
+    if [ -n "$CACHE_LOCATION" ] && [[ "$CACHE_LOCATION" == *"weather"* ]]; then
+        loc_weather=$(echo "$CACHE_LOCATION" | python3 -c "import sys,json;d=json.load(sys.stdin);print(d.get('weather',''))" 2>/dev/null)
+    fi
+    output+="\n"
+    output+="$(center_text "${BOLD}${WHITE}📍 ${loc_weather}${RESET}" $TERM_WIDTH)\n"
+    
+    # === 주식 시세 ===
+    output+="\n"
+    output+="${BRIGHT_YELLOW}$(full_line '─')${RESET}\n"
+    output+="$(center_text "${BOLD}${BRIGHT_YELLOW}📈 미국 주식 시세${RESET}" $TERM_WIDTH)\n"
+    output+="${BRIGHT_YELLOW}$(full_line '─')${RESET}\n"
+    output+="\n"
     
     local symbols=("SPY" "QQQ" "NVDA" "SNPS" "REKR" "SMCX")
-    local names=("S&P500 ETF" "나스닥100 ETF" "엔비디아" "시놉시스" "Rekor Systems" "SMC Corp")
+    local names=("S&P500 ETF  " "나스닥100    " "엔비디아     " "시놉시스     " "Rekor       " "SMC Corp    ")
+    
+    local stock_line=""
+    local count=0
+    local cols=3
+    [ $TERM_WIDTH -lt 100 ] && cols=2
     
     for i in "${!symbols[@]}"; do
-        local symbol="${symbols[$i]}"
+        local sym="${symbols[$i]}"
         local name="${names[$i]}"
+        local raw=$(echo "$CACHE_STOCKS" | grep -o "${sym}|[^;]*" | cut -d'|' -f2)
         
-        # 캐시에서 데이터 추출
-        local data=$(echo "$CACHE_STOCKS" | grep -o "${symbol}:[^|]*" | cut -d':' -f2-)
-        
-        local price="N/A"
-        local change="0"
-        local pct="0"
-        
-        if [ -n "$data" ] && [[ "$data" == *"{"* ]]; then
-            local result=$(echo "$data" | python3 -c "
-import sys, json
-try:
-    d = json.load(sys.stdin)
-    price = d.get('c', d.get('currentPrice', 0)) or 0
-    change = d.get('d', d.get('change', 0)) or 0
-    pct = d.get('dp', d.get('percentChange', 0)) or 0
-    print(f'{price:.2f}|{change:.2f}|{pct:.2f}')
-except:
-    print('N/A|0|0')
+        local price="---" change="0" pct="0" color="$WHITE" arrow="─"
+        if [ -n "$raw" ] && [[ "$raw" == *"{"* ]]; then
+            read price change pct <<< $(echo "$raw" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+p=d.get('c',0) or 0
+c=d.get('d',0) or 0
+dp=d.get('dp',0) or 0
+print(f'{p:.2f} {c:.2f} {dp:.2f}')
 " 2>/dev/null)
-            price=$(echo "$result" | cut -d'|' -f1)
-            change=$(echo "$result" | cut -d'|' -f2)
-            pct=$(echo "$result" | cut -d'|' -f3)
-        fi
-        
-        # 색상 결정
-        local color="$WHITE"
-        local arrow=""
-        if [ "$price" != "N/A" ]; then
             if (( $(echo "$change > 0" | bc -l 2>/dev/null || echo 0) )); then
-                color="$BRIGHT_GREEN"
-                arrow="▲"
+                color="$BRIGHT_GREEN"; arrow="▲"
             elif (( $(echo "$change < 0" | bc -l 2>/dev/null || echo 0) )); then
-                color="$BRIGHT_RED"
-                arrow="▼"
-            else
-                arrow="─"
+                color="$BRIGHT_RED"; arrow="▼"
             fi
         fi
         
-        # 출력 포맷
-        printf "  ${BOLD}${CYAN}%-6s %-12s${RESET} " "$symbol" "$name"
-        if [ "$price" != "N/A" ]; then
-            printf "${color}\$%-8s %s%-6s (%s%%)${RESET}\n" "$price" "$arrow" "$change" "$pct"
-        else
-            printf "${DIM}로딩 중...${RESET}\n"
+        local item=$(printf "  ${BOLD}${CYAN}%-5s${RESET} %-10s ${color}\$%-7s %s%-5s (%s%%)${RESET}" "$sym" "$name" "$price" "$arrow" "$change" "$pct")
+        stock_line+="$item"
+        count=$((count + 1))
+        
+        if [ $((count % cols)) -eq 0 ]; then
+            output+="$stock_line\n"
+            stock_line=""
         fi
     done
-    echo ""
-}
-
-# 날씨 섹션 출력
-print_weather() {
-    print_header "🌤️  한국 주요 도시 날씨" "$BRIGHT_BLUE"
-    echo ""
+    [ -n "$stock_line" ] && output+="$stock_line\n"
     
-    if [ -z "$CACHE_WEATHER" ] || [ "$CACHE_WEATHER" == "[]" ]; then
-        print_center "날씨 정보 로딩 중..." "$DIM"
-        return
+    # === 날씨 ===
+    output+="\n"
+    output+="${BRIGHT_BLUE}$(full_line '─')${RESET}\n"
+    output+="$(center_text "${BOLD}${BRIGHT_BLUE}🌤️ 한국 주요 도시 날씨${RESET}" $TERM_WIDTH)\n"
+    output+="${BRIGHT_BLUE}$(full_line '─')${RESET}\n"
+    output+="\n"
+    
+    if [ -n "$CACHE_WEATHER" ] && [[ "$CACHE_WEATHER" == *"["* ]]; then
+        local weather_out=$(echo "$CACHE_WEATHER" | python3 -c "
+import sys,json
+cols=$((TERM_WIDTH / 26))
+if cols < 2: cols = 2
+if cols > 5: cols = 5
+data=json.load(sys.stdin)
+icons={'clear':'☀️','cloud':'☁️','rain':'🌧️','snow':'❄️','mist':'🌫️','fog':'🌫️','haze':'🌫️','thunder':'⛈️'}
+def icon(w):
+    w=w.lower() if w else ''
+    for k,v in icons.items():
+        if k in w: return v
+    return '🌡️'
+def tcolor(t):
+    if t<=0: return '\033[96m'
+    elif t<=10: return '\033[94m'
+    elif t<=20: return '\033[92m'
+    elif t<=30: return '\033[93m'
+    return '\033[91m'
+r='\033[0m'
+b='\033[1m'
+d='\033[2m'
+out=''
+for i,c in enumerate(data):
+    nm=c.get('cityKo','')[:4]
+    t=c.get('temperatureCelsius',0)
+    w=c.get('weather','')
+    h=c.get('humidity',0)
+    out+=f'  {icon(w)} {b}{nm:4}{r} {tcolor(t)}{t:5.1f}°C{r} {d}({h}%){r}'
+    if (i+1)%cols==0: out+='\n'
+print(out)
+" 2>/dev/null)
+        output+="$weather_out\n"
     fi
     
-    # 컬럼 수 계산 (터미널 너비에 따라)
-    local item_width=24
-    local cols=$(( TERM_WIDTH / item_width ))
-    [ $cols -lt 1 ] && cols=1
-    [ $cols -gt 5 ] && cols=5
+    # === 시스템 상태 ===
+    output+="\n"
+    output+="${BRIGHT_GREEN}$(full_line '─')${RESET}\n"
+    output+="$(center_text "${BOLD}${BRIGHT_GREEN}💻 서버 시스템 상태${RESET}" $TERM_WIDTH)\n"
+    output+="${BRIGHT_GREEN}$(full_line '─')${RESET}\n"
+    output+="\n"
     
-    echo "$CACHE_WEATHER" | python3 -c "
-import sys, json
-
-try:
-    data = json.load(sys.stdin)
-except:
-    print('  데이터 파싱 오류')
-    sys.exit(0)
-
-cols = $cols
-
-def get_icon(weather):
-    w = weather.lower() if weather else ''
-    if 'clear' in w: return '☀️ '
-    elif 'cloud' in w or 'overcast' in w: return '☁️ '
-    elif 'rain' in w or 'drizzle' in w: return '🌧️'
-    elif 'snow' in w: return '❄️ '
-    elif 'mist' in w or 'fog' in w or 'haze' in w: return '🌫️'
-    elif 'thunder' in w: return '⛈️ '
-    else: return '🌡️ '
-
-items = []
-for city in data:
-    name_ko = city.get('cityKo', city.get('city', ''))
-    temp = city.get('temperatureCelsius', 0)
-    weather = city.get('weather', '')
-    humidity = city.get('humidity', 0)
-    icon = get_icon(weather)
+    if [ -n "$CACHE_SYSTEM" ] && [[ "$CACHE_SYSTEM" == *"{"* ]]; then
+        local sys_out=$(echo "$CACHE_SYSTEM" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)
+def fmt_bytes(b):
+    for u in ['B','KB','MB','GB','TB']:
+        if b<1024: return f'{b:.1f}{u}'
+        b/=1024
+    return f'{b:.1f}PB'
+cpu=d.get('systemCpuLoad',-1)
+mem_pct=d.get('memoryUsagePercent',0)
+mem_used=d.get('usedPhysicalMemory',0)
+mem_total=d.get('totalPhysicalMemory',0)
+heap_pct=d.get('heapUsagePercent',0)
+heap_used=d.get('heapUsed',0)
+heap_max=d.get('heapMax',0)
+threads=d.get('threadCount',0)
+gc_count=d.get('gcCount',0)
+gc_time=d.get('gcTime',0)
+uptime=d.get('uptimeMillis',0)//1000
+up_h,up_m,up_s=uptime//3600,(uptime%3600)//60,uptime%60
+g='\033[92m'
+y='\033[93m'
+r='\033[91m'
+c='\033[96m'
+rs='\033[0m'
+b='\033[1m'
+def bar(pct,w=15):
+    filled=int(pct/100*w)
+    col=g if pct<60 else y if pct<80 else r
+    return f'{col}'+('█'*filled)+('░'*(w-filled))+f'{rs}'
+print(f'  {b}CPU:{rs} {cpu:5.1f}% {bar(cpu)}   {b}메모리:{rs} {mem_pct:5.1f}% {bar(mem_pct)} ({fmt_bytes(mem_used)}/{fmt_bytes(mem_total)})')
+print(f'  {b}Heap:{rs}{heap_pct:5.1f}% {bar(heap_pct)} ({fmt_bytes(heap_used)}/{fmt_bytes(heap_max)})   {b}스레드:{rs} {threads}   {b}GC:{rs} {gc_count}회/{gc_time}ms')
+print(f'  {b}Uptime:{rs} {up_h}시간 {up_m}분 {up_s}초')
+" 2>/dev/null)
+        output+="$sys_out\n"
+    else
+        output+="  시스템 정보 로딩 중...\n"
+    fi
     
-    # 온도에 따른 색상 코드
-    if temp <= 0:
-        temp_color = '\033[96m'  # cyan (추움)
-    elif temp <= 10:
-        temp_color = '\033[94m'  # blue
-    elif temp <= 20:
-        temp_color = '\033[92m'  # green
-    elif temp <= 30:
-        temp_color = '\033[93m'  # yellow
-    else:
-        temp_color = '\033[91m'  # red (더움)
+    # === 푸터 ===
+    output+="\n"
+    output+="${DIM}$(full_line '─')${RESET}\n"
+    output+="$(center_text "${DIM}서버: ${API_SERVER} │ Ctrl+C: 종료${RESET}" $TERM_WIDTH)\n"
     
-    reset = '\033[0m'
-    bold = '\033[1m'
-    dim = '\033[2m'
-    
-    items.append(f'  {icon} {bold}{name_ko:4}{reset} {temp_color}{temp:5.1f}°C{reset} {dim}({humidity}%){reset}')
-
-# 출력
-for i, item in enumerate(items):
-    print(item, end='')
-    if (i + 1) % cols == 0:
-        print()
-    else:
-        print('  ', end='')
-
-if len(items) % cols != 0:
-    print()
-" 2>/dev/null
-    echo ""
-}
-
-# 푸터 출력
-print_footer() {
-    print_line "─" "$DIM"
-    local footer="서버: $API_SERVER │ 종료: Ctrl+C │ 데이터 갱신: ${CACHE_INTERVAL}초"
-    print_center "$footer" "$DIM"
-}
-
-# 메인 화면 그리기
-draw_screen() {
-    get_terminal_size
-    
-    # 커서 홈으로 이동 (깜빡임 방지)
-    tput cup 0 0
-    
-    # 타이틀
-    echo ""
-    print_center "╔════════════════════════════════════════╗" "$BRIGHT_MAGENTA"
-    print_center "║       📊  MyAPI 실시간 대시보드  📊      ║" "${BOLD}${BRIGHT_MAGENTA}"
-    print_center "╚════════════════════════════════════════╝" "$BRIGHT_MAGENTA"
-    
-    # 현재 위치 날씨
-    print_location
-    
-    # 시간
-    print_time
-    
-    # 주식 정보
-    print_stocks
-    
-    # 날씨 정보
-    print_weather
-    
-    # 푸터
-    print_footer
-    
-    # 남은 공간 클리어
-    tput ed
-}
-
-# 실시간 대시보드 실행
-run_dashboard() {
-    # 화면 초기화
+    # 화면 출력 (깜빡임 방지)
     clear
+    echo -e "$output"
+}
+
+# 메인 루프
+run_dashboard() {
     tput civis  # 커서 숨기기
+    trap 'tput cnorm; clear; echo "대시보드 종료"; exit 0' INT TERM
     
-    # 종료 시 커서 복원
-    trap 'tput cnorm; echo ""; exit 0' INT TERM
-    
-    # 초기 데이터 로드
     fetch_all_data
     
-    # 매초 화면 갱신
     while true; do
-        fetch_all_data  # 필요시에만 갱신됨 (내부 체크)
+        fetch_all_data
         draw_screen
         sleep 1
     done
@@ -333,34 +299,17 @@ show_help() {
     echo "사용법: ./dashboard.sh [옵션]"
     echo ""
     echo "옵션:"
-    echo "  (없음)         실시간 대시보드 실행"
-    echo "  -s, --server   서버 주소 지정"
+    echo "  -s, --server   서버 주소 (기본: http://localhost:8080)"
     echo "  -h, --help     도움말"
-    echo ""
-    echo "예시:"
-    echo "  ./dashboard.sh"
-    echo "  ./dashboard.sh --server http://localhost:8080"
-    echo "  API_SERVER=http://localhost:8080 ./dashboard.sh"
 }
 
 # 인자 처리
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -s|--server)
-            API_SERVER="$2"
-            shift 2
-            ;;
-        -h|--help)
-            show_help
-            exit 0
-            ;;
-        *)
-            echo "알 수 없는 옵션: $1"
-            show_help
-            exit 1
-            ;;
+        -s|--server) API_SERVER="$2"; shift 2 ;;
+        -h|--help) show_help; exit 0 ;;
+        *) echo "알 수 없는 옵션: $1"; exit 1 ;;
     esac
 done
 
-# 실행
 run_dashboard
