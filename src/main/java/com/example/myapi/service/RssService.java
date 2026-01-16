@@ -22,13 +22,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * RSS Feed Service with 1-minute caching per URL
+ * RSS Feed Service with 10-minute caching per URL
  */
 @Service
 public class RssService {
 
     private static final Logger log = LoggerFactory.getLogger(RssService.class);
-    private static final Duration CACHE_TTL = Duration.ofMinutes(1);
+    private static final Duration CACHE_TTL = Duration.ofMinutes(10);
     private static final int MAX_ITEMS = 20;
     private static final int TIMEOUT_MS = 10000;
 
@@ -43,10 +43,6 @@ public class RssService {
 
     // ==================== Public Feed URLs ====================
 
-    public static final String REUTERS_TOP = "https://feeds.reuters.com/reuters/topNews";
-    public static final String REUTERS_BUSINESS = "https://feeds.reuters.com/reuters/businessNews";
-    public static final String REUTERS_TECH = "https://feeds.reuters.com/reuters/technologyNews";
-
     public static final String YAHOO_MARKET = "https://finance.yahoo.com/news/rssindex";
     public static final String YAHOO_STOCK_FORMAT = "https://feeds.finance.yahoo.com/rss/2.0/headline?s=%s&region=US&lang=en-US";
 
@@ -55,28 +51,7 @@ public class RssService {
     public static final String YONHAP_POLITICS = "https://www.yna.co.kr/rss/politics.xml";
     public static final String YONHAP_IT = "https://www.yna.co.kr/rss/industry.xml";
 
-    // ==================== Public Methods ====================
-
-    /**
-     * Get Reuters Top News
-     */
-    public RssFeedResponse getReutersTop() {
-        return getFeed(REUTERS_TOP, "Reuters Top News", "reuters");
-    }
-
-    /**
-     * Get Reuters Business News
-     */
-    public RssFeedResponse getReutersBusiness() {
-        return getFeed(REUTERS_BUSINESS, "Reuters Business", "reuters");
-    }
-
-    /**
-     * Get Reuters Technology News
-     */
-    public RssFeedResponse getReutersTech() {
-        return getFeed(REUTERS_TECH, "Reuters Technology", "reuters");
-    }
+    // ==================== Yahoo Finance ====================
 
     /**
      * Get Yahoo Finance Market News
@@ -92,6 +67,8 @@ public class RssService {
         String url = String.format(YAHOO_STOCK_FORMAT, symbol.toUpperCase());
         return getFeed(url, "Yahoo Finance - " + symbol.toUpperCase(), "yahoo");
     }
+
+    // ==================== Yonhap (Korean News) ====================
 
     /**
      * Get Yonhap News (All)
@@ -121,6 +98,8 @@ public class RssService {
         return getFeed(YONHAP_IT, "Yonhap IT/Science", "yonhap");
     }
 
+    // ==================== Custom ====================
+
     /**
      * Get custom RSS feed by URL
      */
@@ -134,7 +113,7 @@ public class RssService {
     public Map<String, Object> getCacheStatus() {
         return Map.of(
                 "cachedFeeds", cache.size(),
-                "cacheTtlSeconds", CACHE_TTL.getSeconds(),
+                "cacheTtlMinutes", CACHE_TTL.toMinutes(),
                 "cachedUrls", cache.keySet()
         );
     }
@@ -142,7 +121,7 @@ public class RssService {
     // ==================== Core Logic ====================
 
     /**
-     * Get feed with caching (1-minute TTL per URL)
+     * Get feed with caching (10-minute TTL per URL)
      */
     private RssFeedResponse getFeed(String url, String title, String source) {
         CachedFeed cached = cache.get(url);
@@ -187,7 +166,15 @@ public class RssService {
             // Return stale cache if available
             if (cached != null) {
                 log.warn("Returning stale cache for: {}", url);
-                return cached.response;
+                return new RssFeedResponse(
+                        cached.response.feedUrl(),
+                        cached.response.feedTitle(),
+                        cached.response.source(),
+                        cached.response.itemCount(),
+                        cached.response.items(),
+                        cached.response.fetchedAt(),
+                        true
+                );
             }
 
             // Return empty response

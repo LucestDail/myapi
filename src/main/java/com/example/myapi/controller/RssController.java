@@ -9,8 +9,8 @@ import java.util.Map;
 /**
  * RSS Feed Controller
  * 
- * All feeds are cached for 1 minute per URL.
- * First call fetches from source, subsequent calls within 1 minute return cache.
+ * All feeds are cached for 10 minutes per URL.
+ * First call fetches from source, subsequent calls within 10 minutes return cache.
  */
 @RestController
 @RequestMapping("/api/rss")
@@ -20,35 +20,6 @@ public class RssController {
 
     public RssController(RssService rssService) {
         this.rssService = rssService;
-    }
-
-    // ==================== Reuters ====================
-
-    /**
-     * Reuters Top News
-     * GET /api/rss/reuters/top
-     */
-    @GetMapping("/reuters/top")
-    public RssFeedResponse getReutersTop() {
-        return rssService.getReutersTop();
-    }
-
-    /**
-     * Reuters Business News
-     * GET /api/rss/reuters/business
-     */
-    @GetMapping("/reuters/business")
-    public RssFeedResponse getReutersBusiness() {
-        return rssService.getReutersBusiness();
-    }
-
-    /**
-     * Reuters Technology News
-     * GET /api/rss/reuters/tech
-     */
-    @GetMapping("/reuters/tech")
-    public RssFeedResponse getReutersTech() {
-        return rssService.getReutersTech();
     }
 
     // ==================== Yahoo Finance ====================

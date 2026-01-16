@@ -131,14 +131,7 @@ curl "http://localhost:8080/api/location/weather"
 
 ### 4. RSS Feed API
 
-All feeds are cached for 60 seconds per URL.
-
-#### Reuters
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/rss/reuters/top` | Top News |
-| `GET` | `/api/rss/reuters/business` | Business News |
-| `GET` | `/api/rss/reuters/tech` | Technology News |
+All feeds are cached for **10 minutes** per URL.
 
 #### Yahoo Finance
 | Method | Endpoint | Description |
@@ -244,7 +237,7 @@ myapi/
 | Stock quotes | 60s | On request after expiry |
 | Weather | 60s | Background scheduler |
 | Location | 60s | Background scheduler |
-| RSS feeds | 60s | On request after expiry |
+| RSS feeds | **10 min** | On request after expiry |
 | System status | Real-time | Every request |
 
 ---
