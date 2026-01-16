@@ -1,0 +1,17 @@
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/MyApiApplication.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/config/FinnhubProperties.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/config/HttpClientConfig.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/config/OpenWeatherProperties.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/controller/FinnhubController.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/controller/WeatherController.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/dto/finnhub/BasicFinancialsResponse.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/dto/finnhub/CompanyProfileResponse.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/dto/finnhub/FinnhubQuoteResponse.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/dto/finnhub/MarketNewsResponse.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/dto/finnhub/RecommendationTrendResponse.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/dto/weather/City.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/dto/weather/CityWeatherResponse.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/dto/weather/OpenWeatherResponse.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/exception/GlobalExceptionHandler.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/service/FinnhubService.java
+/Users/oseunghyeon/DevWorkSpace/myapi/src/main/java/com/example/myapi/service/WeatherService.java
