@@ -1,215 +1,217 @@
 #!/bin/bash
-
 #############################################
-# MyAPI 실시간 대시보드
+# MyAPI 대시보드
 #############################################
 
 API_SERVER="${API_SERVER:-http://localhost:8080}"
 
 # 색상
-RESET='\033[0m'
-BOLD='\033[1m'
-DIM='\033[2m'
-BRIGHT_RED='\033[91m'
-BRIGHT_GREEN='\033[92m'
-BRIGHT_YELLOW='\033[93m'
-BRIGHT_BLUE='\033[94m'
-BRIGHT_MAGENTA='\033[95m'
-BRIGHT_CYAN='\033[96m'
-CYAN='\033[36m'
-WHITE='\033[37m'
+RS='\033[0m'; BD='\033[1m'; DM='\033[2m'
+RD='\033[91m'; GR='\033[92m'; YL='\033[93m'; BL='\033[94m'; MG='\033[95m'; CY='\033[96m'; WH='\033[37m'
 
 # 캐시
-CACHE_LOCATION=""
-CACHE_STOCKS=""
-CACHE_WEATHER=""
-CACHE_SYSTEM=""
-CACHE_TIME=0
-CACHE_INTERVAL=60
-CAT_FRAME=0
-COLS=80
+C_LOC="" C_STK="" C_WTH="" C_SYS="" C_TM=0
+CAT=0
 
-get_size() {
-    COLS=$(tput cols 2>/dev/null || echo 80)
-    [ $COLS -lt 70 ] && COLS=70
-}
+# 터미널 너비
+W=$(tput cols 2>/dev/null || echo 80)
+[ $W -lt 60 ] && W=60
 
-rep() { printf "%${2}s" | tr ' ' "$1"; }
+refresh_check() { [ $(($(date +%s) - C_TM)) -ge 60 ]; }
 
-need_refresh() { [ $(($(date +%s) - CACHE_TIME)) -ge $CACHE_INTERVAL ]; }
-
-fetch_data() {
-    if need_refresh; then
-        CACHE_LOCATION=$(curl -s --connect-timeout 2 "${API_SERVER}/api/location/weather" 2>/dev/null)
-        local symbols=("SPY" "QLD" "NVDA" "TSLA" "SNPS" "REKR" "SMCX" "ETHU" "BITX" "GLDM" "XXRP" "SOLT")
-        CACHE_STOCKS=""
-        for s in "${symbols[@]}"; do
-            CACHE_STOCKS+="${s}|$(curl -s --connect-timeout 2 "${API_SERVER}/api/finnhub/quote?symbol=${s}" 2>/dev/null);"
+fetch() {
+    if refresh_check; then
+        C_LOC=$(curl -s -m2 "${API_SERVER}/api/location/weather" 2>/dev/null)
+        C_STK=""
+        for s in SPY QLD NVDA TSLA SNPS REKR SMCX ETHU BITX GLDM XXRP SOLT; do
+            C_STK+="${s}|$(curl -s -m2 "${API_SERVER}/api/finnhub/quote?symbol=${s}" 2>/dev/null);"
         done
-        CACHE_WEATHER=$(curl -s --connect-timeout 2 "${API_SERVER}/api/weather" 2>/dev/null)
-        CACHE_TIME=$(date +%s)
+        C_WTH=$(curl -s -m2 "${API_SERVER}/api/weather" 2>/dev/null)
+        C_TM=$(date +%s)
     fi
-    CACHE_SYSTEM=$(curl -s --connect-timeout 1 "${API_SERVER}/api/system/status" 2>/dev/null)
-}
-
-# 고정 너비 라인 출력
-pline() {
-    local text="$1"
-    local color="${2:-$DIM}"
-    local plain=$(echo -e "$text" | sed 's/\x1b\[[0-9;]*m//g')
-    local pad=$((COLS - ${#plain} - 2))
-    [ $pad -lt 0 ] && pad=0
-    printf "${color}|${RESET}%-s%${pad}s${color}|${RESET}\n" "$text" ""
-}
-
-cline() {
-    local text="$1"
-    local color="${2:-$DIM}"
-    local plain=$(echo -e "$text" | sed 's/\x1b\[[0-9;]*m//g')
-    local total=$((COLS - 2))
-    local tlen=${#plain}
-    local lpad=$(( (total - tlen) / 2 ))
-    local rpad=$((total - tlen - lpad))
-    [ $lpad -lt 0 ] && lpad=0
-    [ $rpad -lt 0 ] && rpad=0
-    printf "${color}|${RESET}%${lpad}s%s%${rpad}s${color}|${RESET}\n" "" "$text" ""
-}
-
-hline() {
-    local color="${1:-$DIM}"
-    printf "${color}+%s+${RESET}\n" "$(rep '-' $((COLS-2)))"
+    C_SYS=$(curl -s -m1 "${API_SERVER}/api/system/status" 2>/dev/null)
 }
 
 draw() {
-    get_size
-    local refresh=$((CACHE_INTERVAL - ($(date +%s) - CACHE_TIME)))
-    [ $refresh -lt 0 ] && refresh=0
+    W=$(tput cols 2>/dev/null || echo 80)
+    [ $W -lt 60 ] && W=60
     
-    local cat_face
-    case $((CAT_FRAME % 4)) in
-        0) cat_face="(=^.^=)" ;; 1) cat_face="(=o.o=)" ;;
-        2) cat_face="(=-.-=)" ;; 3) cat_face="(=^o^=)" ;;
-    esac
-    CAT_FRAME=$((CAT_FRAME + 1))
+    local sec=$((60 - ($(date +%s) - C_TM)))
+    [ $sec -lt 0 ] && sec=0
     
-    # 버퍼 생성
-    local B=""
+    local cat_arr=("(=^.^=)" "(=o.o=)" "(=-.-=)" "(=^o^=)")
+    local cat="${cat_arr[$((CAT % 4))]}"
+    CAT=$((CAT + 1))
     
-    # 헤더
-    B+="$(hline $BRIGHT_MAGENTA)\n"
-    B+="$(cline "${BRIGHT_YELLOW}${cat_face}${RESET} ${BOLD}MyAPI 대시보드${RESET} ${BRIGHT_YELLOW}${cat_face}${RESET}" $BRIGHT_MAGENTA)\n"
-    B+="$(cline "${DIM}$(date '+%Y-%m-%d %H:%M:%S') | 갱신: ${refresh}초${RESET}" $BRIGHT_MAGENTA)\n"
-    B+="$(hline $BRIGHT_MAGENTA)\n"
-    
-    # 위치
-    local loc="로딩..."
-    [ -n "$CACHE_LOCATION" ] && [[ "$CACHE_LOCATION" == *"weather"* ]] && \
-        loc=$(echo "$CACHE_LOCATION" | python3 -c "import sys,json;print(json.load(sys.stdin).get('weather','N/A'))" 2>/dev/null)
-    B+="$(cline "${WHITE}@ ${loc}${RESET}" $DIM)\n"
-    
-    # 주식
-    B+="$(hline $BRIGHT_YELLOW)\n"
-    B+="$(cline "${BOLD}${BRIGHT_YELLOW}[ 미국 주식 정보 ]${RESET}" $BRIGHT_YELLOW)\n"
-    B+="$(hline $BRIGHT_YELLOW)\n"
-    
-    local syms=("SPY" "QLD" "NVDA" "TSLA" "SNPS" "REKR" "SMCX" "ETHU" "BITX" "GLDM" "XXRP" "SOLT")
-    local nms=("S&P500" "나스닥2X" "엔비디아" "테슬라" "시놉시스" "레코르" "SMC" "이더2X" "비트2X" "금ETF" "리플ETF" "솔라나")
-    
-    for i in "${!syms[@]}"; do
-        local s="${syms[$i]}" n="${nms[$i]}"
-        local raw=$(echo "$CACHE_STOCKS" | grep -o "${s}|[^;]*" | cut -d'|' -f2)
-        local p="---" c="+0.00" pt="+0.00" clr="$WHITE"
-        if [ -n "$raw" ] && [[ "$raw" == *"{"* ]]; then
-            read p c pt <<< $(echo "$raw" | python3 -c "import sys,json
+    # Python으로 전체 화면 생성 (한글 너비 정확히 계산)
+    python3 << PYEND
+import json, sys
+
+W = $W
+sec = $sec
+cat = "$cat"
+api = "$API_SERVER"
+
+# 캐시 데이터
+loc_raw = '''$C_LOC'''
+stk_raw = '''$C_STK'''
+wth_raw = '''$C_WTH'''
+sys_raw = '''$C_SYS'''
+
+# 색상
+RS, BD, DM = '\033[0m', '\033[1m', '\033[2m'
+RD, GR, YL, BL, MG, CY, WH = '\033[91m', '\033[92m', '\033[93m', '\033[94m', '\033[95m', '\033[96m', '\033[37m'
+
+def wlen(s):
+    """문자열의 실제 표시 너비 (한글=2, 영어=1)"""
+    s = ''.join(c for c in s if c not in '\033[0-9;m')
+    import re
+    s = re.sub(r'\033\[[0-9;]*m', '', s)
+    w = 0
+    for c in s:
+        if '\uac00' <= c <= '\ud7a3' or '\u4e00' <= c <= '\u9fff':
+            w += 2
+        elif '\uff00' <= c <= '\uffef':
+            w += 2
+        else:
+            w += 1
+    return w
+
+def hline(color=DM):
+    return f"{color}+{'-'*(W-2)}+{RS}"
+
+def pline(text, color=DM):
+    tw = wlen(text)
+    pad = W - 4 - tw
+    if pad < 0: pad = 0
+    return f"{color}|{RS} {text}{' '*pad} {color}|{RS}"
+
+def cline(text, color=DM):
+    tw = wlen(text)
+    total = W - 2
+    lp = (total - tw) // 2
+    rp = total - tw - lp
+    if lp < 0: lp = 0
+    if rp < 0: rp = 0
+    return f"{color}|{RS}{' '*lp}{text}{' '*rp}{color}|{RS}"
+
+lines = []
+
+# 헤더
+lines.append(hline(MG))
+lines.append(cline(f"{YL}{cat}{RS} {BD}MyAPI 대시보드{RS} {YL}{cat}{RS}", MG))
+lines.append(cline(f"{DM}{__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | 갱신: {sec}초{RS}", MG))
+lines.append(hline(MG))
+
+# 위치
+loc = "로딩..."
 try:
-    d=json.load(sys.stdin);print(f\"{d.get('c',0):.2f} {d.get('d',0):+.2f} {d.get('dp',0):+.2f}\")
-except:print('0 0 0')" 2>/dev/null)
-            [[ "$c" == +* ]] && [ "$c" != "+0.00" ] && clr="$BRIGHT_GREEN"
-            [[ "$c" == -* ]] && clr="$BRIGHT_RED"
-        fi
-        B+="$(pline " ${CYAN}${s}${RESET} ${n} ${clr}\$${p} ${c} (${pt}%)${RESET}" $BRIGHT_YELLOW)\n"
-    done
+    d = json.loads(loc_raw)
+    loc = d.get('weather', 'N/A')
+except: pass
+lines.append(cline(f"{WH}@ {loc}{RS}", DM))
+
+# 주식
+lines.append(hline(YL))
+lines.append(cline(f"{BD}{YL}[ 미국 주식 정보 ]{RS}", YL))
+lines.append(hline(YL))
+
+stocks = [
+    ("SPY", "S&P500"), ("QLD", "나스닥2X"), ("NVDA", "엔비디아"), ("TSLA", "테슬라"),
+    ("SNPS", "시놉시스"), ("REKR", "레코르"), ("SMCX", "SMC"), ("ETHU", "이더2X"),
+    ("BITX", "비트2X"), ("GLDM", "금ETF"), ("XXRP", "리플ETF"), ("SOLT", "솔라나")
+]
+
+for sym, nm in stocks:
+    p, c, pt, clr = "---", "+0.00", "+0.00", WH
+    try:
+        for part in stk_raw.split(';'):
+            if part.startswith(sym + '|'):
+                raw = part.split('|', 1)[1]
+                if raw and '{' in raw:
+                    d = json.loads(raw)
+                    p = f"{d.get('c', 0):.2f}"
+                    c = f"{d.get('d', 0):+.2f}"
+                    pt = f"{d.get('dp', 0):+.2f}"
+                    if d.get('d', 0) > 0: clr = GR
+                    elif d.get('d', 0) < 0: clr = RD
+                break
+    except: pass
+    lines.append(pline(f"{CY}{sym:5}{RS} {nm:6} {clr}\${p:>8} {c:>7} ({pt}%){RS}", YL))
+
+# 날씨
+lines.append(hline(BL))
+lines.append(cline(f"{BD}{BL}[ 한국 날씨 ]{RS}", BL))
+lines.append(hline(BL))
+
+try:
+    data = json.loads(wth_raw)
+    for c in data:
+        nm = c.get('cityKo', '?')
+        t = c.get('temperatureCelsius', 0)
+        h = c.get('humidity', 0)
+        w = (c.get('weather', '') or '').lower()
+        ic = '*' if 'clear' in w else '#' if 'cloud' in w else '~' if 'rain' in w else '=' if any(x in w for x in ['mist','fog','haze']) else '-'
+        tc = '\033[96m' if t <= 0 else '\033[94m' if t <= 10 else '\033[92m' if t <= 20 else '\033[93m' if t <= 30 else '\033[91m'
+        lines.append(pline(f"[{ic}] {BD}{nm:4}{RS} {tc}{t:5.1f}C{RS} {DM}{h:2}%{RS}", BL))
+except: 
+    lines.append(pline("로딩...", BL))
+
+# 시스템
+lines.append(hline(GR))
+lines.append(cline(f"{BD}{GR}[ 시스템 상태 ]{RS}", GR))
+lines.append(hline(GR))
+
+try:
+    d = json.loads(sys_raw)
+    def fm(b):
+        for u in ['B','K','M','G']:
+            if b < 1024: return f"{b:.0f}{u}"
+            b /= 1024
+        return f"{b:.0f}T"
+    def bar(p, w=12):
+        f = int(p / 100 * w)
+        c = GR if p < 60 else YL if p < 80 else RD
+        return c + '#' * f + '-' * (w - f) + RS
     
-    # 날씨
-    B+="$(hline $BRIGHT_BLUE)\n"
-    B+="$(cline "${BOLD}${BRIGHT_BLUE}[ 한국 날씨 ]${RESET}" $BRIGHT_BLUE)\n"
-    B+="$(hline $BRIGHT_BLUE)\n"
+    cpu = max(0, d.get('systemCpuLoad', 0))
+    pc = max(0, d.get('processCpuLoad', 0))
+    mm = d.get('memoryUsagePercent', 0)
+    mu, mt = d.get('usedPhysicalMemory', 0), d.get('totalPhysicalMemory', 0)
+    hp = d.get('heapUsagePercent', 0)
+    hu, hm = d.get('heapUsed', 0), d.get('heapMax', 0)
+    th = d.get('threadCount', 0)
+    gc, gt = d.get('gcCount', 0), d.get('gcTime', 0)
+    up = d.get('uptimeMillis', 0) // 1000
     
-    if [ -n "$CACHE_WEATHER" ] && [[ "$CACHE_WEATHER" == *"["* ]]; then
-        while IFS= read -r wl; do
-            B+="$(pline " $wl" $BRIGHT_BLUE)\n"
-        done <<< "$(echo "$CACHE_WEATHER" | python3 -c "import sys,json
-data=json.load(sys.stdin)
-def ic(w):
-    w=(w or '').lower()
-    if 'clear' in w:return '*'
-    if 'cloud' in w:return '#'
-    if 'rain' in w:return '~'
-    if 'snow' in w:return 'o'
-    if 'mist' in w or 'fog' in w or 'haze' in w:return '='
-    return '-'
-def tc(t):
-    if t<=0:return '\033[96m'
-    if t<=10:return '\033[94m'
-    if t<=20:return '\033[92m'
-    if t<=30:return '\033[93m'
-    return '\033[91m'
-r,b,d='\033[0m','\033[1m','\033[2m'
-for c in data:
-    print(f\"[{ic(c.get('weather',''))}] {b}{c.get('cityKo','?'):3}{r} {tc(c.get('temperatureCelsius',0))}{c.get('temperatureCelsius',0):5.1f}C{r} {d}{c.get('humidity',0):2}%{r}\")" 2>/dev/null)"
-    fi
-    
-    # 시스템
-    B+="$(hline $BRIGHT_GREEN)\n"
-    B+="$(cline "${BOLD}${BRIGHT_GREEN}[ 시스템 상태 ]${RESET}" $BRIGHT_GREEN)\n"
-    B+="$(hline $BRIGHT_GREEN)\n"
-    
-    if [ -n "$CACHE_SYSTEM" ] && [[ "$CACHE_SYSTEM" == *"{"* ]]; then
-        while IFS= read -r sl; do
-            B+="$(pline " $sl" $BRIGHT_GREEN)\n"
-        done <<< "$(echo "$CACHE_SYSTEM" | python3 -c "import sys,json
-d=json.load(sys.stdin)
-def fm(b):
-    for u in['B','K','M','G']:
-        if b<1024:return f'{b:.0f}{u}'
-        b/=1024
-    return f'{b:.0f}T'
-def br(p,w=12):
-    f=int(p/100*w);g,y,r,s='\033[92m','\033[93m','\033[91m','\033[0m'
-    return (g if p<60 else y if p<80 else r)+'#'*f+'-'*(w-f)+s
-b,s='\033[1m','\033[0m'
-cpu,pc=max(0,d.get('systemCpuLoad',0)),max(0,d.get('processCpuLoad',0))
-mm,mu,mt=d.get('memoryUsagePercent',0),d.get('usedPhysicalMemory',0),d.get('totalPhysicalMemory',0)
-hp,hu,hm=d.get('heapUsagePercent',0),d.get('heapUsed',0),d.get('heapMax',0)
-th,gc,gt=d.get('threadCount',0),d.get('gcCount',0),d.get('gcTime',0)
-up=d.get('uptimeMillis',0)//1000
-print(f'{b}CPU{s} {cpu:5.1f}% {br(cpu)} {b}PROC{s} {pc:4.1f}% {br(pc)}')
-print(f'{b}MEM{s} {mm:5.1f}% {br(mm)} {fm(mu)}/{fm(mt)}')
-print(f'{b}HEAP{s}{hp:5.1f}% {br(hp)} {fm(hu)}/{fm(hm)}')
-print(f'{b}THR{s} {th} {b}GC{s} {gc}/{gt}ms {b}UP{s} {up//3600}h{(up%3600)//60}m{up%60}s')" 2>/dev/null)"
-    else
-        B+="$(pline " 로딩..." $BRIGHT_GREEN)\n"
-    fi
-    
-    # 푸터
-    B+="$(hline $BRIGHT_MAGENTA)\n"
-    B+="$(cline "${DIM}서버: ${API_SERVER} | 종료: Ctrl+C${RESET}" $BRIGHT_MAGENTA)\n"
-    B+="$(hline $BRIGHT_MAGENTA)\n"
-    
-    # 출력 (커서 이동 + 버퍼 출력 + 나머지 클리어)
-    printf '\033[H'
-    printf '%b' "$B"
-    printf '\033[J'
+    lines.append(pline(f"{BD}CPU{RS} {cpu:5.1f}% {bar(cpu)} {BD}PROC{RS} {pc:4.1f}% {bar(pc)}", GR))
+    lines.append(pline(f"{BD}MEM{RS} {mm:5.1f}% {bar(mm)} {fm(mu)}/{fm(mt)}", GR))
+    lines.append(pline(f"{BD}HEAP{RS}{hp:5.1f}% {bar(hp)} {fm(hu)}/{fm(hm)}", GR))
+    lines.append(pline(f"{BD}THR{RS} {th} {BD}GC{RS} {gc}/{gt}ms {BD}UP{RS} {up//3600}h{(up%3600)//60}m{up%60}s", GR))
+except:
+    lines.append(pline("로딩...", GR))
+
+# 푸터
+lines.append(hline(MG))
+lines.append(cline(f"{DM}서버: {api} | 종료: Ctrl+C{RS}", MG))
+lines.append(hline(MG))
+
+# 출력
+print('\033[H', end='')
+for l in lines:
+    print(l)
+print('\033[J', end='')
+PYEND
 }
 
 main() {
     printf '\033[2J\033[H'
     tput civis 2>/dev/null
     trap 'tput cnorm 2>/dev/null; printf "\033[2J\033[H"; echo "종료!"; exit 0' INT TERM
-    fetch_data
-    while true; do fetch_data; draw; sleep 1; done
+    fetch
+    while true; do fetch; draw; sleep 1; done
 }
 
-[[ "$1" == "-h" ]] || [[ "$1" == "--help" ]] && { echo "사용법: $0 [-s 서버]"; exit 0; }
+[[ "$1" == "-h" || "$1" == "--help" ]] && { echo "사용법: $0 [-s 서버]"; exit 0; }
 while [[ $# -gt 0 ]]; do case $1 in -s|--server) API_SERVER="$2"; shift 2;; *) shift;; esac; done
 main
