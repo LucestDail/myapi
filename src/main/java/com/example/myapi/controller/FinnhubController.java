@@ -5,6 +5,7 @@ import com.example.myapi.service.FinnhubService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/finnhub")
@@ -81,5 +82,14 @@ public class FinnhubController {
     @GetMapping("/peers")
     public List<String> getCompanyPeers(@RequestParam String symbol) {
         return finnhubService.getCompanyPeers(symbol);
+    }
+
+    /**
+     * Get cache status
+     * GET /api/finnhub/cache/status
+     */
+    @GetMapping("/cache/status")
+    public Map<String, Object> getCacheStatus() {
+        return finnhubService.getCacheStatus();
     }
 }
