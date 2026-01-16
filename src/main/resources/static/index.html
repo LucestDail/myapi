@@ -158,48 +158,63 @@
             letter-spacing: 1px;
         }
 
-        .section-meta {
+        .section-time {
             color: var(--text-muted);
-            font-size: 10px;
+            font-size: 9px;
         }
 
         /* Stocks */
-        .stock-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px;
+        .stock-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
             font-size: 11px;
         }
 
         .stock-item {
-            display: grid;
-            grid-template-columns: 55px 50px 65px 85px;
-            gap: 4px;
-            padding: 3px 0;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px dotted var(--border-color);
+        }
+
+        .stock-item:last-child {
+            border-bottom: none;
+        }
+
+        .stock-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .stock-symbol {
             color: var(--accent-cyan);
             font-weight: 600;
+            min-width: 50px;
         }
 
         .stock-name {
             color: var(--text-secondary);
             font-size: 10px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        }
+
+        .stock-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .stock-price {
             color: var(--text-primary);
-            text-align: right;
+            font-weight: 500;
         }
 
         .stock-change {
-            text-align: right;
             font-size: 10px;
+            min-width: 100px;
+            text-align: right;
         }
 
         .stock-change.positive {
@@ -634,6 +649,46 @@
             padding: 8px 0;
         }
 
+        /* News Pagination */
+        .news-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dotted var(--border-color);
+        }
+
+        .news-pagination button {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 10px;
+            transition: all 0.2s;
+        }
+
+        .news-pagination button:hover:not(:disabled) {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .news-pagination button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .news-pagination .page-info {
+            color: var(--text-muted);
+            font-size: 10px;
+            min-width: 60px;
+            text-align: center;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .container {
@@ -683,9 +738,9 @@
                 <div class="section">
                     <div class="section-header">
                         <span class="section-title">[ STOCKS ]</span>
-                        <span class="section-meta" id="stocks-refresh"></span>
+                        <span class="section-time" id="stocks-time"></span>
                     </div>
-                    <div class="stock-grid" id="stocks-container">
+                    <div class="stock-list" id="stocks-container">
                         <div class="loading">데이터 로딩 중</div>
                     </div>
                 </div>
@@ -694,7 +749,7 @@
                 <div class="section">
                     <div class="section-header">
                         <span class="section-title">[ WEATHER ]</span>
-                        <span class="section-meta" id="weather-refresh"></span>
+                        <span class="section-time" id="weather-time"></span>
                     </div>
                     <div class="weather-grid" id="weather-container">
                         <div class="loading">데이터 로딩 중</div>
@@ -705,7 +760,7 @@
                 <div class="section">
                     <div class="section-header">
                         <span class="section-title">[ NEWS ]</span>
-                        <span class="section-meta" id="news-refresh"></span>
+                        <span class="section-time" id="news-time"></span>
                     </div>
                     <div class="news-list" id="news-container">
                         <div class="loading">데이터 로딩 중</div>
@@ -716,7 +771,7 @@
                 <div class="section">
                     <div class="section-header">
                         <span class="section-title">[ SYSTEM ]</span>
-                        <span class="section-meta">(real-time)</span>
+                        <span class="section-time" id="system-time"></span>
                     </div>
                     <div class="system-grid" id="system-container">
                         <div class="loading">데이터 로딩 중</div>
@@ -763,6 +818,13 @@
         let reconnectAttempts = 0;
         const MAX_RECONNECT_ATTEMPTS = 10;
 
+        // News pagination state
+        let yahooNewsData = [];
+        let yonhapNewsData = [];
+        let yahooPage = 0;
+        let yonhapPage = 0;
+        const NEWS_PER_PAGE = 5;
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             updateTime();
@@ -770,11 +832,38 @@
             loadConfig();
         });
 
-        // Time display
+        // Time display (local time)
         function updateTime() {
             const now = new Date();
-            const formatted = now.toISOString().replace('T', ' ').substring(0, 19);
+            const formatted = formatLocalDateTime(now);
             document.getElementById('current-time').textContent = formatted;
+        }
+
+        // Format local date time
+        function formatLocalDateTime(date) {
+            if (!date) return '';
+            if (typeof date === 'string') {
+                date = new Date(date);
+            }
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // Format for section time display
+        function formatSectionTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${month}.${day} ${hours}:${minutes}:${seconds} 기준`;
         }
 
         // Load config and start SSE
@@ -838,7 +927,7 @@
             eventSource.addEventListener('system', (event) => {
                 const data = JSON.parse(event.data);
                 if (data.system) {
-                    renderSystem(data.system);
+                    renderSystem(data.system, data.timestamp);
                 }
             });
 
@@ -882,20 +971,20 @@
                 renderStocks(data.stocks);
             }
             if (data.weather) {
-                renderWeather(data.weather);
+                renderWeather(data.weather, data.timestamp);
             }
             if (data.news) {
                 renderNews(data.news);
             }
             if (data.system) {
-                renderSystem(data.system);
+                renderSystem(data.system, data.timestamp);
             }
         }
 
         // Render Stocks
         function renderStocks(stocksData) {
             const container = document.getElementById('stocks-container');
-            const refreshEl = document.getElementById('stocks-refresh');
+            const timeEl = document.getElementById('stocks-time');
 
             if (!stocksData.quotes || stocksData.quotes.length === 0) {
                 container.innerHTML = '<div class="no-data">데이터 없음</div>';
@@ -912,22 +1001,26 @@
 
                 return `
                     <div class="stock-item">
-                        <span class="stock-symbol">${stock.symbol}</span>
-                        <span class="stock-name">${stock.name || ''}</span>
-                        <span class="stock-price">$ ${price}</span>
-                        <span class="stock-change ${changeClass}">${sign}${change} (${sign}${percent}%)</span>
+                        <div class="stock-left">
+                            <span class="stock-symbol">${stock.symbol}</span>
+                            <span class="stock-name">${stock.name || ''}</span>
+                        </div>
+                        <div class="stock-right">
+                            <span class="stock-price">$ ${price}</span>
+                            <span class="stock-change ${changeClass}">${sign}${change} (${sign}${percent}%)</span>
+                        </div>
                     </div>
                 `;
             }).join('');
 
             container.innerHTML = html;
-            refreshEl.textContent = `(refresh: ${formatRefreshTime(stocksData.fetchedAt)})`;
+            timeEl.textContent = formatSectionTime(stocksData.fetchedAt);
         }
 
         // Render Weather
-        function renderWeather(weatherData) {
+        function renderWeather(weatherData, timestamp) {
             const container = document.getElementById('weather-container');
-            const refreshEl = document.getElementById('weather-refresh');
+            const timeEl = document.getElementById('weather-time');
 
             if (!weatherData || weatherData.length === 0) {
                 container.innerHTML = '<div class="no-data">데이터 없음</div>';
@@ -965,49 +1058,106 @@
             }).join('');
 
             container.innerHTML = html;
-            refreshEl.textContent = `(refresh: 60s)`;
+            if (timestamp) {
+                timeEl.textContent = formatSectionTime(timestamp);
+            }
         }
 
-        // Render News
+        // Render News with pagination
         function renderNews(newsData) {
             const container = document.getElementById('news-container');
-            const refreshEl = document.getElementById('news-refresh');
+            const timeEl = document.getElementById('news-time');
 
+            // Store data for pagination
+            yahooNewsData = newsData.yahooNews || [];
+            yonhapNewsData = newsData.yonhapNews || [];
+            yahooPage = 0;
+            yonhapPage = 0;
+
+            renderNewsContent();
+            
+            if (newsData.fetchedAt) {
+                timeEl.textContent = formatSectionTime(newsData.fetchedAt);
+            }
+        }
+
+        function renderNewsContent() {
+            const container = document.getElementById('news-container');
             let html = '';
 
             // Yahoo News
             html += '<div class="news-section-title">📈 YAHOO FINANCE</div>';
-            if (newsData.yahooNews && newsData.yahooNews.length > 0) {
-                html += newsData.yahooNews.map(news => `
+            if (yahooNewsData.length > 0) {
+                const yahooStart = yahooPage * NEWS_PER_PAGE;
+                const yahooEnd = Math.min(yahooStart + NEWS_PER_PAGE, yahooNewsData.length);
+                const yahooSlice = yahooNewsData.slice(yahooStart, yahooEnd);
+                
+                html += yahooSlice.map(news => `
                     <div class="news-item" onclick="window.open('${news.link}', '_blank')">
                         <div class="news-title">${escapeHtml(news.title)}</div>
-                        <div class="news-meta">${news.pubDate || ''}</div>
                     </div>
                 `).join('');
+
+                const yahooTotalPages = Math.ceil(yahooNewsData.length / NEWS_PER_PAGE);
+                if (yahooTotalPages > 1) {
+                    html += `
+                        <div class="news-pagination">
+                            <button onclick="changeYahooPage(-1)" ${yahooPage === 0 ? 'disabled' : ''}>◀</button>
+                            <span class="page-info">${yahooPage + 1} / ${yahooTotalPages}</span>
+                            <button onclick="changeYahooPage(1)" ${yahooPage >= yahooTotalPages - 1 ? 'disabled' : ''}>▶</button>
+                        </div>
+                    `;
+                }
             } else {
                 html += '<div class="no-data">No news</div>';
             }
 
             // Yonhap News
             html += '<div class="news-section-title">📰 연합뉴스</div>';
-            if (newsData.yonhapNews && newsData.yonhapNews.length > 0) {
-                html += newsData.yonhapNews.map(news => `
+            if (yonhapNewsData.length > 0) {
+                const yonhapStart = yonhapPage * NEWS_PER_PAGE;
+                const yonhapEnd = Math.min(yonhapStart + NEWS_PER_PAGE, yonhapNewsData.length);
+                const yonhapSlice = yonhapNewsData.slice(yonhapStart, yonhapEnd);
+                
+                html += yonhapSlice.map(news => `
                     <div class="news-item" onclick="window.open('${news.link}', '_blank')">
                         <div class="news-title">${escapeHtml(news.title)}</div>
-                        <div class="news-meta">${news.pubDate || ''}</div>
                     </div>
                 `).join('');
+
+                const yonhapTotalPages = Math.ceil(yonhapNewsData.length / NEWS_PER_PAGE);
+                if (yonhapTotalPages > 1) {
+                    html += `
+                        <div class="news-pagination">
+                            <button onclick="changeYonhapPage(-1)" ${yonhapPage === 0 ? 'disabled' : ''}>◀</button>
+                            <span class="page-info">${yonhapPage + 1} / ${yonhapTotalPages}</span>
+                            <button onclick="changeYonhapPage(1)" ${yonhapPage >= yonhapTotalPages - 1 ? 'disabled' : ''}>▶</button>
+                        </div>
+                    `;
+                }
             } else {
                 html += '<div class="no-data">뉴스 없음</div>';
             }
 
             container.innerHTML = html;
-            refreshEl.textContent = `(refresh: ${formatRefreshTime(newsData.fetchedAt)})`;
+        }
+
+        function changeYahooPage(delta) {
+            const totalPages = Math.ceil(yahooNewsData.length / NEWS_PER_PAGE);
+            yahooPage = Math.max(0, Math.min(yahooPage + delta, totalPages - 1));
+            renderNewsContent();
+        }
+
+        function changeYonhapPage(delta) {
+            const totalPages = Math.ceil(yonhapNewsData.length / NEWS_PER_PAGE);
+            yonhapPage = Math.max(0, Math.min(yonhapPage + delta, totalPages - 1));
+            renderNewsContent();
         }
 
         // Render System
-        function renderSystem(systemData) {
+        function renderSystem(systemData, timestamp) {
             const container = document.getElementById('system-container');
+            const timeEl = document.getElementById('system-time');
 
             const cpuPercent = systemData.cpuUsage >= 0 ? systemData.cpuUsage.toFixed(1) : 'N/A';
             const memPercent = systemData.memoryUsagePercent.toFixed(1);
@@ -1054,6 +1204,11 @@
             `;
 
             container.innerHTML = html;
+            if (timestamp) {
+                timeEl.textContent = formatSectionTime(timestamp);
+            } else {
+                timeEl.textContent = formatSectionTime(new Date());
+            }
         }
 
         // Settings Modal

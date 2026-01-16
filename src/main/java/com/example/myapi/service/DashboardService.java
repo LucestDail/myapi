@@ -98,7 +98,6 @@ public class DashboardService {
                 RssFeedResponse yahooFeed = rssService.getYahooStock(firstSymbol);
                 if (yahooFeed != null && yahooFeed.items() != null) {
                     yahooNews = yahooFeed.items().stream()
-                            .limit(5)
                             .map(NewsItem::from)
                             .toList();
                 }
@@ -113,7 +112,6 @@ public class DashboardService {
             RssFeedResponse yonhapFeed = rssService.getYonhapAll();
             if (yonhapFeed != null && yonhapFeed.items() != null) {
                 yonhapNews = yonhapFeed.items().stream()
-                        .limit(5)
                         .map(NewsItem::from)
                         .toList();
             }

@@ -29,7 +29,7 @@ public class RssService {
 
     private static final Logger log = LoggerFactory.getLogger(RssService.class);
     private static final Duration CACHE_TTL = Duration.ofMinutes(10);
-    private static final int MAX_ITEMS = 20;
+    private static final int MAX_ITEMS = 100;
     private static final int TIMEOUT_MS = 10000;
 
     // Cache: URL -> (response, fetchedAt)
@@ -46,10 +46,10 @@ public class RssService {
     public static final String YAHOO_MARKET = "https://finance.yahoo.com/news/rssindex";
     public static final String YAHOO_STOCK_FORMAT = "https://feeds.finance.yahoo.com/rss/2.0/headline?s=%s&region=US&lang=en-US";
 
-    public static final String YONHAP_ALL = "https://www.yna.co.kr/rss/all.xml";
-    public static final String YONHAP_ECONOMY = "https://www.yna.co.kr/rss/economy.xml";
-    public static final String YONHAP_POLITICS = "https://www.yna.co.kr/rss/politics.xml";
-    public static final String YONHAP_IT = "https://www.yna.co.kr/rss/industry.xml";
+    public static final String YONHAP_ALL = "https://www.yonhapnewstv.co.kr/browse/feed/";
+    public static final String YONHAP_ECONOMY = "https://www.yonhapnewstv.co.kr/browse/feed/";
+    public static final String YONHAP_POLITICS = "https://www.yonhapnewstv.co.kr/browse/feed/";
+    public static final String YONHAP_IT = "https://www.yonhapnewstv.co.kr/browse/feed/";
 
     // ==================== Yahoo Finance ====================
 
