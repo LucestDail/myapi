@@ -40,6 +40,9 @@
     justify-content: space-between;
     align-items: center;
     background: var(--bg-tertiary);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 .dashboard-title {
@@ -61,6 +64,9 @@
     border-bottom: 1px solid var(--border-color);
     padding: 0 4px;
     gap: 2px;
+    position: sticky;
+    top: 0;
+    z-index: 99;
 }
 
 .mode-tab {
@@ -152,5 +158,106 @@
     .dashboard-section {
         border-left: none;
         border-top: 1px solid var(--border-color);
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .dashboard-header {
+        padding: 10px 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .dashboard-header > div:first-child {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .dashboard-title {
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .dashboard-time {
+        font-size: 10px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .dashboard-header > div:last-child {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    
+    .connection-status {
+        gap: 4px;
+    }
+    
+    .status-text {
+        font-size: 9px;
+        white-space: nowrap;
+    }
+    
+    .settings-btn {
+        padding: 5px 10px;
+        font-size: 10px;
+        white-space: nowrap;
+    }
+    
+    .dashboard-mode-tabs {
+        padding: 0 2px;
+        gap: 1px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .dashboard-mode-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .mode-tab {
+        padding: 5px 3px;
+        font-size: 8px;
+        min-width: fit-content;
+        flex-shrink: 0;
+    }
+    
+    .mode-tab-icon {
+        font-size: 9px;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .dashboard-header {
+        padding: 8px 10px;
+    }
+    
+    .dashboard-title {
+        font-size: 11px;
+    }
+    
+    .dashboard-time {
+        font-size: 9px;
+    }
+    
+    .status-text {
+        font-size: 8px;
+    }
+    
+    .settings-btn {
+        padding: 4px 8px;
+        font-size: 9px;
+    }
+    
+    .mode-tab {
+        padding: 4px 2px;
+        font-size: 7px;
     }
 }

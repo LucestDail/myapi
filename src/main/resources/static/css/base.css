@@ -73,3 +73,25 @@ body {
         grid-template-rows: 45vh 1fr;
     }
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .container {
+        grid-template-rows: 40vh 1fr;
+    }
+    
+    .youtube-wrapper {
+        padding: 10px;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 480px) {
+    .container {
+        grid-template-rows: 35vh 1fr;
+    }
+    
+    .youtube-wrapper {
+        padding: 8px;
+    }
+}
