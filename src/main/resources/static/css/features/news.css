@@ -105,3 +105,131 @@
     padding: 6px 8px;
     border-left: 2px solid var(--accent-cyan);
 }
+
+/* Social News Styles */
+.social-news-container {
+    font-size: 11px;
+}
+
+.social-news-item {
+    padding: 8px 0;
+    border-bottom: 1px dotted var(--border-color);
+    transition: all 0.2s;
+}
+
+.social-news-item[style*="cursor: pointer"]:hover {
+    background: var(--bg-tertiary);
+    margin: 0 -8px;
+    padding: 8px 8px;
+}
+
+.social-news-item:last-child {
+    border-bottom: none;
+}
+
+.social-news-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.social-news-time {
+    color: var(--text-muted);
+    font-size: 9px;
+}
+
+.social-news-company {
+    color: var(--accent-magenta);
+    font-size: 9px;
+    font-weight: 600;
+}
+
+.social-news-title {
+    color: var(--text-primary);
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 4px;
+}
+
+.social-news-content {
+    color: var(--text-secondary);
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+/* Traffic Table Styles */
+.traffic-container {
+    font-size: 10px;
+    overflow-x: auto;
+}
+
+.traffic-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+}
+
+.traffic-table thead {
+    background: var(--bg-tertiary);
+    position: sticky;
+    top: 0;
+}
+
+.traffic-table th {
+    padding: 6px 4px;
+    text-align: left;
+    color: var(--accent-cyan);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.traffic-table td {
+    padding: 4px;
+    color: var(--text-secondary);
+    border-bottom: 1px dotted var(--border-color);
+    white-space: nowrap;
+}
+
+.traffic-table tr:hover {
+    background: var(--bg-tertiary);
+}
+
+/* Emergency Table Styles */
+.emergency-container {
+    font-size: 10px;
+    overflow-x: auto;
+}
+
+.emergency-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+}
+
+.emergency-table thead {
+    background: var(--bg-tertiary);
+    position: sticky;
+    top: 0;
+}
+
+.emergency-table th {
+    padding: 6px 4px;
+    text-align: left;
+    color: var(--accent-magenta);
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.emergency-table td {
+    padding: 4px;
+    color: var(--text-secondary);
+    border-bottom: 1px dotted var(--border-color);
+    white-space: nowrap;
+}
+
+.emergency-table tr:hover {
+    background: var(--bg-tertiary);
+}

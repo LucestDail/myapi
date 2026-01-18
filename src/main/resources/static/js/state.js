@@ -41,7 +41,7 @@ export function setReconnectAttempts(count) {
 
 // UI State
 export let uiState = {
-    dashboardMode: 'all',
+    dashboardMode: 'social',
     sections: {
         stocks: { collapsed: false },
         weather: { collapsed: false },
@@ -72,6 +72,14 @@ export let uiState = {
         autoSlide: false,
         slideInterval: 5
     },
+    socialNews: {
+        autoSlide: false,
+        slideInterval: 5
+    },
+    traffic: {
+        autoSlide: false,
+        slideInterval: 5
+    },
     todo: {
         filter: 'all'
     },
@@ -92,10 +100,21 @@ export let stocksData = { quotes: [] };
 export let weatherData = [];
 export let yahooNewsData = [];
 export let yonhapNewsData = [];
+export let socialNewsData = [];
+export let trafficData = null;
+export let emergencyData = null;
 export let newsSlideIndex = 0;
 export let newsSlideTimer = null;
 export let newsPageIndex = 0;
 export const NEWS_PER_PAGE = 5;
+export let socialNewsSlideIndex = 0;
+export let socialNewsSlideTimer = null;
+export let socialNewsPageIndex = 0;
+export const SOCIAL_NEWS_PER_PAGE = 3;
+export let trafficSlideIndex = 0;
+export let trafficSlideTimer = null;
+export let trafficPageIndex = 0;
+export const TRAFFIC_PER_PAGE = 10;
 export let todosData = [];
 export let lifeInfoData = null;
 export let systemHistoryData = [];
@@ -138,6 +157,15 @@ export function setStocksData(data) { stocksData = data; }
 export function setWeatherData(data) { weatherData = data; }
 export function setYahooNewsData(data) { yahooNewsData = data; }
 export function setYonhapNewsData(data) { yonhapNewsData = data; }
+export function setSocialNewsData(data) { socialNewsData = data; }
+export function setTrafficData(data) { trafficData = data; }
+export function setEmergencyData(data) { emergencyData = data; }
+export function setSocialNewsSlideIndex(idx) { socialNewsSlideIndex = idx; }
+export function setSocialNewsSlideTimer(timer) { socialNewsSlideTimer = timer; }
+export function setSocialNewsPageIndex(idx) { socialNewsPageIndex = idx; }
+export function setTrafficSlideIndex(idx) { trafficSlideIndex = idx; }
+export function setTrafficSlideTimer(timer) { trafficSlideTimer = timer; }
+export function setTrafficPageIndex(idx) { trafficPageIndex = idx; }
 export function setNewsSlideIndex(idx) { newsSlideIndex = idx; }
 export function setNewsSlideTimer(timer) { newsSlideTimer = timer; }
 export function setNewsPageIndex(idx) { newsPageIndex = idx; }

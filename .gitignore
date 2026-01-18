@@ -50,6 +50,7 @@ mvnw.cmd
 .env
 .env.local
 .env.*.local
+conf.example
 
 # Spring Boot
 spring-shell.log

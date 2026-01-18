@@ -66,7 +66,7 @@ export function applyDashboardMode() {
     // Show/hide sections based on mode
     document.querySelectorAll('.section[data-mode]').forEach(section => {
         const sectionMode = section.dataset.mode;
-        if (mode === 'all' || sectionMode === mode) {
+        if (sectionMode === mode) {
             section.classList.add('mode-visible');
         } else {
             section.classList.remove('mode-visible');

@@ -80,7 +80,11 @@ public record DashboardData(
             double temperatureCelsius,
             int humidity,
             String weather,
-            String icon
+            String icon,
+            int cloudiness,
+            double windSpeed,
+            Instant sunrise,
+            Instant sunset
     ) {
         public static WeatherData from(CityWeatherResponse response) {
             return new WeatherData(
@@ -89,7 +93,11 @@ public record DashboardData(
                     response.temperatureCelsius(),
                     response.humidity(),
                     response.weather(),
-                    response.icon()
+                    response.icon(),
+                    response.cloudiness(),
+                    response.windSpeed(),
+                    response.sunrise(),
+                    response.sunset()
             );
         }
     }

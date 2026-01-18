@@ -59,25 +59,83 @@ export function escapeHtml(text) {
 }
 
 /**
- * Format news date to relative time
+ * Format news date to relative time or absolute time
  */
 export function formatNewsDate(dateStr) {
+    if (!dateStr || dateStr.trim() === '') {
+        return '';
+    }
+    
     try {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const diffMs = now - date;
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        let date;
         
-        if (diffHours < 1) {
-            const diffMins = Math.floor(diffMs / (1000 * 60));
-            return `${diffMins}분 전`;
-        } else if (diffHours < 24) {
-            return `${diffHours}시간 전`;
+        // "yyyy-MM-dd HH:mm:ss" 형식 파싱
+        if (dateStr.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+            // "yyyy-MM-dd HH:mm:ss" 형식 - 로컬 시간대로 파싱
+            const [datePart, timePart] = dateStr.split(' ');
+            const [year, month, day] = datePart.split('-');
+            const [hours, minutes, seconds] = timePart.split(':');
+            // 로컬 시간대로 Date 객체 생성
+            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), 
+                           parseInt(hours), parseInt(minutes), parseInt(seconds || 0));
+        } else if (dateStr.includes('T')) {
+            // ISO 형식 (2026-01-19T02:57:00)
+            date = new Date(dateStr);
         } else {
-            const diffDays = Math.floor(diffHours / 24);
+            date = new Date(dateStr);
+        }
+        
+        if (isNaN(date.getTime())) {
+            // 파싱 실패 시 원본 문자열 반환
+            return dateStr;
+        }
+        
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        
+        // 미래 날짜인 경우 절대 시간 표시 (YYYY-MM-DD HH:mm)
+        if (diffMs < 0) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+        
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        
+        // 1분 미만이면 "방금 전"
+        if (diffMins < 1) {
+            return '방금 전';
+        }
+        
+        // 1시간 미만이면 "N분 전"
+        if (diffHours < 1) {
+            return `${diffMins}분 전`;
+        }
+        
+        // 24시간 미만이면 "N시간 전"
+        if (diffDays < 1) {
+            return `${diffHours}시간 전`;
+        }
+        
+        // 7일 미만이면 "N일 전"
+        if (diffDays < 7) {
             return `${diffDays}일 전`;
         }
+        
+        // 7일 이상이면 절대 시간 표시 (YYYY-MM-DD HH:mm)
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
     } catch (e) {
+        console.error('Error formatting date:', dateStr, e);
         return dateStr;
     }
 }

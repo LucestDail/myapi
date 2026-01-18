@@ -40,11 +40,20 @@ import {
 } from './features/productivity.js';
 import { renderSystem, loadSystemHistory, setHistoryPeriod } from './features/system.js';
 import { 
+    initSocial, loadSocialNews, loadTraffic, loadEmergency,
+    renderSocialNews, renderTraffic, renderEmergency,
+    toggleSocialNewsAutoSlide, startSocialNewsAutoSlide, stopSocialNewsAutoSlide, changeSocialNewsPage,
+    toggleTrafficAutoSlide, startTrafficAutoSlide, stopTrafficAutoSlide, changeTrafficPage
+} from './features/social.js';
+import { 
     openSettings, closeSettings, saveSettings, 
     addTicker, updateTicker, removeTicker, renderTickerList,
     toggleAlertRule, deleteAlertRule, showAddRuleForm, 
     cancelRuleForm, saveAlertRule 
 } from './features/settings.js';
+import { 
+    openAIReportModal, closeAIReportModal, generateAIReport
+} from './features/ai-report.js';
 
 // ===========================================
 // Initialization
@@ -72,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSystemHistory();
     startStockHighlight();
     initNewsAutoSlide();
+    initSocial(); // Initialize social features (news, traffic, emergency)
     
     // New features init
     renderWorldClock();
@@ -117,6 +127,14 @@ window.loadQuote = loadQuote;
 window.toggleNewsAutoSlide = toggleNewsAutoSlide;
 window.changeNewsPage = changeNewsPage;
 
+// Social News Functions
+window.toggleSocialNewsAutoSlide = toggleSocialNewsAutoSlide;
+window.changeSocialNewsPage = changeSocialNewsPage;
+
+// Traffic Functions
+window.toggleTrafficAutoSlide = toggleTrafficAutoSlide;
+window.changeTrafficPage = changeTrafficPage;
+
 // Todo Functions
 window.setTodoFilter = setTodoFilter;
 window.addTodo = addTodo;
@@ -148,6 +166,11 @@ window.setHistoryPeriod = setHistoryPeriod;
 window.openSettings = openSettings;
 window.closeSettings = closeSettings;
 window.saveSettings = saveSettings;
+
+// AI Report Functions
+window.openAIReportModal = openAIReportModal;
+window.closeAIReportModal = closeAIReportModal;
+window.generateAIReport = generateAIReport;
 window.addTicker = addTicker;
 window.updateTicker = updateTicker;
 window.removeTicker = removeTicker;

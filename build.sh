@@ -14,52 +14,60 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # API 키 설정 파일 경로
-API_KEYS_FILE="/etc/myapi/api-keys.conf"
+CONF_FILE="/etc/myapi/conf"
 
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}  MyAPI Build & Run Script${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 
-# 1. API 키 파일 확인
-echo -e "${YELLOW}[1/4] API 키 파일 확인...${NC}"
-if [ ! -f "$API_KEYS_FILE" ]; then
-    echo -e "${RED}❌ API 키 파일이 존재하지 않습니다: $API_KEYS_FILE${NC}"
+# 1. 설정 파일 확인
+echo -e "${YELLOW}[1/4] 설정 파일 확인...${NC}"
+if [ ! -f "$CONF_FILE" ]; then
+    echo -e "${RED}❌ 설정 파일이 존재하지 않습니다: $CONF_FILE${NC}"
     echo ""
-    echo -e "${YELLOW}다음 명령어로 API 키 파일을 생성하세요:${NC}"
+    echo -e "${YELLOW}다음 명령어로 설정 파일을 생성하세요:${NC}"
     echo ""
     echo "  sudo mkdir -p /etc/myapi"
-    echo "  sudo tee /etc/myapi/api-keys.conf > /dev/null << 'EOF'"
-    echo "# MyAPI Configuration"
-    echo "export FINNHUB_API_KEY=\"your_finnhub_api_key_here\""
-    echo "export OPENWEATHER_API_KEY=\"your_openweather_api_key_here\""
-    echo "export AIRKOREA_API_KEY=\"your_airkorea_api_key_here\""
-    echo "EOF"
-    echo "  sudo chmod 600 /etc/myapi/api-keys.conf"
+    echo "  sudo nano /etc/myapi/conf"
+    echo ""
+    echo -e "${YELLOW}또는 conf 파일 예시를 참고하세요.${NC}"
     echo ""
     exit 1
 fi
 
-# API 키 로드
-source "$API_KEYS_FILE"
+# 설정 파일 로드
+source "$CONF_FILE"
 
-# API 키 검증
-if [ -z "$FINNHUB_API_KEY" ] || [ "$FINNHUB_API_KEY" == "your_finnhub_api_key_here" ]; then
-    echo -e "${RED}❌ FINNHUB_API_KEY가 설정되지 않았습니다.${NC}"
+# 필수 환경변수 검증
+REQUIRED_VARS=(
+    "FINNHUB_API_KEY"
+    "OPENWEATHER_API_KEY"
+    "AIRKOREA_API_KEY"
+    "EMERGENCY_API_SERVICE_KEY"
+    "TRAFFIC_API_KEY"
+    "GEMINI_API_KEY"
+    "NEWS_DB_JDBC_URL"
+    "NEWS_DB_USERNAME"
+    "NEWS_DB_PASSWORD"
+)
+
+MISSING_VARS=()
+for var in "${REQUIRED_VARS[@]}"; do
+    if [ -z "${!var}" ]; then
+        MISSING_VARS+=("$var")
+    fi
+done
+
+if [ ${#MISSING_VARS[@]} -gt 0 ]; then
+    echo -e "${RED}❌ 다음 환경변수가 설정되지 않았습니다:${NC}"
+    for var in "${MISSING_VARS[@]}"; do
+        echo -e "  ${RED}- $var${NC}"
+    done
     exit 1
 fi
 
-if [ -z "$OPENWEATHER_API_KEY" ] || [ "$OPENWEATHER_API_KEY" == "your_openweather_api_key_here" ]; then
-    echo -e "${RED}❌ OPENWEATHER_API_KEY가 설정되지 않았습니다.${NC}"
-    exit 1
-fi
-
-if [ -z "$AIRKOREA_API_KEY" ] || [ "$AIRKOREA_API_KEY" == "your_airkorea_api_key_here" ]; then
-    echo -e "${RED}❌ AIRKOREA_API_KEY가 설정되지 않았습니다.${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✅ API 키 로드 완료${NC}"
+echo -e "${GREEN}✅ 설정 파일 로드 완료${NC}"
 echo ""
 
 # 2. Java 버전 확인
@@ -98,6 +106,13 @@ cd "$SCRIPT_DIR"
 # 환경변수 export
 export FINNHUB_API_KEY
 export OPENWEATHER_API_KEY
+export AIRKOREA_API_KEY
+export EMERGENCY_API_SERVICE_KEY
+export TRAFFIC_API_KEY
+export GEMINI_API_KEY
+export NEWS_DB_JDBC_URL
+export NEWS_DB_USERNAME
+export NEWS_DB_PASSWORD
 
 # 빌드
 echo "Maven 빌드 중..."
@@ -109,8 +124,8 @@ echo -e "${GREEN}  빌드 완료!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "실행 방법:"
-echo -e "  ${YELLOW}source /etc/myapi/api-keys.conf && java -jar target/myapi-0.0.1-SNAPSHOT.jar${NC}"
+echo -e "  ${YELLOW}source /etc/myapi/conf && java -jar target/myapi-0.0.1-SNAPSHOT.jar${NC}"
 echo ""
-echo -e "또는 Maven으로 실행:"
-echo -e "  ${YELLOW}source /etc/myapi/api-keys.conf && mvn spring-boot:run${NC}"
+echo -e "또는 ./run.sh 사용:"
+echo -e "  ${YELLOW}./run.sh start${NC}"
 echo ""

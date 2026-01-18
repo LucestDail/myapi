@@ -16,7 +16,7 @@
 set -e
 
 # 설정
-API_KEYS_FILE="/etc/myapi/api-keys.conf"
+CONF_FILE="/etc/myapi/conf"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 JAR_FILE="$SCRIPT_DIR/target/myapi-0.0.1-SNAPSHOT.jar"
 LOG_FILE="$SCRIPT_DIR/myapi.log"
@@ -28,16 +28,23 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# API 키 로드
+# 설정 파일 로드
 load_api_keys() {
-    if [ ! -f "$API_KEYS_FILE" ]; then
-        echo -e "${RED}❌ API 키 파일이 존재하지 않습니다: $API_KEYS_FILE${NC}"
+    if [ ! -f "$CONF_FILE" ]; then
+        echo -e "${RED}❌ 설정 파일이 존재하지 않습니다: $CONF_FILE${NC}"
         echo "먼저 build.sh를 실행하여 가이드를 확인하세요."
         exit 1
     fi
-    source "$API_KEYS_FILE"
+    source "$CONF_FILE"
     export FINNHUB_API_KEY
     export OPENWEATHER_API_KEY
+    export AIRKOREA_API_KEY
+    export EMERGENCY_API_SERVICE_KEY
+    export TRAFFIC_API_KEY
+    export GEMINI_API_KEY
+    export NEWS_DB_JDBC_URL
+    export NEWS_DB_USERNAME
+    export NEWS_DB_PASSWORD
 }
 
 # JAR 파일 확인

@@ -88,22 +88,17 @@ public class DashboardService {
     // ==================== 뉴스 데이터 ====================
 
     public NewsData getNewsData() {
-        // Yahoo Finance 뉴스 (첫 번째 티커 기준)
+        // Yahoo Finance 종합 경제 뉴스 (대시보드용)
         List<NewsItem> yahooNews = new ArrayList<>();
-        DashboardConfig config = currentConfig.get();
-        
-        if (!config.tickers().isEmpty()) {
-            String firstSymbol = config.tickers().get(0).symbol();
-            try {
-                RssFeedResponse yahooFeed = rssService.getYahooStock(firstSymbol);
-                if (yahooFeed != null && yahooFeed.items() != null) {
-                    yahooNews = yahooFeed.items().stream()
-                            .map(NewsItem::from)
-                            .toList();
-                }
-            } catch (Exception e) {
-                log.warn("Failed to get Yahoo news: {}", e.getMessage());
+        try {
+            RssFeedResponse yahooFeed = rssService.getYahooMarket();
+            if (yahooFeed != null && yahooFeed.items() != null) {
+                yahooNews = yahooFeed.items().stream()
+                        .map(NewsItem::from)
+                        .toList();
             }
+        } catch (Exception e) {
+            log.warn("Failed to get Yahoo market news: {}", e.getMessage());
         }
 
         // 연합뉴스

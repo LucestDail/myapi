@@ -47,14 +47,15 @@
                         <div class="status-dot" id="status-dot"></div>
                         <span class="status-text" id="status-text">연결 중...</span>
                     </div>
+                    <button class="settings-btn" onclick="openAIReportModal()">AI 리포트</button>
                     <button class="settings-btn" onclick="openSettings()">설정</button>
                 </div>
             </header>
 
             <!-- Dashboard Mode Tabs -->
             <div class="dashboard-mode-tabs">
-                <button class="mode-tab active" data-mode="all" onclick="setDashboardMode('all')">
-                    <span class="mode-tab-icon">◈</span>전체
+                <button class="mode-tab active" data-mode="social" onclick="setDashboardMode('social')">
+                    <span class="mode-tab-icon">📰</span>사회
                 </button>
                 <button class="mode-tab" data-mode="finance" onclick="setDashboardMode('finance')">
                     <span class="mode-tab-icon">$</span>금융
@@ -71,6 +72,66 @@
             </div>
 
             <div class="dashboard-content">
+                <!-- Social News Section -->
+                <div class="section" id="social-news-section" data-section="social-news" data-mode="social">
+                    <div class="section-header" onclick="toggleSection('social-news')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ 뉴스 ]</span>
+                        </div>
+                        <span class="section-time" id="social-news-time"></span>
+                    </div>
+                    <div class="section-body">
+                        <div class="section-controls">
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="social-news-auto-slide" onchange="toggleSocialNewsAutoSlide()">
+                                <span>자동 슬라이드</span>
+                            </label>
+                        </div>
+                        <div class="social-news-container" id="social-news-container">
+                            <div class="loading">데이터 로딩 중</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Traffic Section -->
+                <div class="section" id="traffic-section" data-section="traffic" data-mode="social">
+                    <div class="section-header" onclick="toggleSection('traffic')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ 실시간 교통돌발상황 ]</span>
+                        </div>
+                        <span class="section-time" id="traffic-time"></span>
+                    </div>
+                    <div class="section-body">
+                        <div class="section-controls">
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="traffic-auto-slide" onchange="toggleTrafficAutoSlide()">
+                                <span>자동 슬라이드</span>
+                            </label>
+                        </div>
+                        <div class="traffic-container" id="traffic-container">
+                            <div class="loading">데이터 로딩 중</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Alert Section -->
+                <div class="section" id="emergency-section" data-section="emergency" data-mode="social">
+                    <div class="section-header" onclick="toggleSection('emergency')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ 실시간 긴급재난문자 ]</span>
+                        </div>
+                        <span class="section-time" id="emergency-time"></span>
+                    </div>
+                    <div class="section-body">
+                        <div class="emergency-container" id="emergency-container">
+                            <div class="loading">데이터 로딩 중</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Stocks Section -->
                 <div class="section" id="stocks-section" data-section="stocks" data-mode="finance">
                     <div class="section-header" onclick="toggleSection('stocks')">
@@ -473,14 +534,37 @@
                 <!-- News Tab -->
                 <div class="tab-content" id="tab-news">
                     <div class="form-group">
+                        <label class="form-label">일반 뉴스</label>
                         <label class="form-checkbox">
                             <input type="checkbox" id="settings-auto-slide">
                             <span>자동 슬라이드 기본값</span>
                         </label>
+                        <div class="form-group" style="margin-top: 8px;">
+                            <label class="form-label">슬라이드 간격 (초)</label>
+                            <input type="number" class="form-input" id="settings-slide-interval" value="5" min="3" max="30">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">슬라이드 간격 (초)</label>
-                        <input type="number" class="form-input" id="settings-slide-interval" value="5" min="3" max="30">
+                        <label class="form-label">사회 뉴스</label>
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="settings-social-news-auto-slide">
+                            <span>자동 슬라이드 기본값</span>
+                        </label>
+                        <div class="form-group" style="margin-top: 8px;">
+                            <label class="form-label">슬라이드 간격 (초)</label>
+                            <input type="number" class="form-input" id="settings-social-news-slide-interval" value="5" min="3" max="30">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">교통돌발상황</label>
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="settings-traffic-auto-slide">
+                            <span>자동 슬라이드 기본값</span>
+                        </label>
+                        <div class="form-group" style="margin-top: 8px;">
+                            <label class="form-label">슬라이드 간격 (초)</label>
+                            <input type="number" class="form-input" id="settings-traffic-slide-interval" value="5" min="3" max="30">
+                        </div>
                     </div>
                 </div>
 
@@ -552,6 +636,122 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeSettings()">취소</button>
                 <button class="btn btn-primary" onclick="saveSettings()">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Report Modal -->
+    <div class="modal-overlay" id="ai-report-modal">
+        <div class="modal" style="max-width: 1600px; width: 98vw; height: 95vh;">
+            <div class="modal-header">
+                <span class="modal-title">AI 리포트 생성</span>
+                <button class="modal-close" onclick="closeAIReportModal()">×</button>
+            </div>
+            <div class="modal-body" style="display: flex; gap: 20px; height: calc(95vh - 60px); padding: 20px; overflow: hidden;">
+                <!-- 좌측: 리포트 생성 폼 -->
+                <div style="flex: 0 0 420px; display: flex; flex-direction: column; gap: 16px; justify-content: space-between;">
+                    <div class="form-group">
+                        <label class="form-label">리포트에 포함할 데이터 선택</label>
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="ai-report-news" checked>
+                                <span>뉴스 (DB)</span>
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="ai-report-weather" checked>
+                                <span>날씨</span>
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="ai-report-traffic" checked>
+                                <span>교통돌발상황</span>
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="ai-report-emergency" checked>
+                                <span>긴급재난문자</span>
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="ai-report-stocks" checked>
+                                <span>주식 정보</span>
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="ai-report-yahoo-finance" checked>
+                                <span>야후 파이낸스</span>
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="ai-report-yonhap-news" checked>
+                                <span>연합뉴스</span>
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="ai-report-life-info" checked>
+                                <span>생활 정보</span>
+                            </label>
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="ai-report-system" checked>
+                                <span>시스템 정보</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 리포트 설정 -->
+                    <div class="form-group">
+                        <label class="form-label">리포트 생성 설정</label>
+                        <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 12px;">Temperature (0.0-2.0)</label>
+                                <input type="number" id="ai-report-temperature" step="0.1" min="0" max="2" value="1.0" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 12px;">Top P</label>
+                                <input type="number" id="ai-report-topP" step="0.1" min="0" max="1" value="0.95" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 12px;">Top K</label>
+                                <input type="number" id="ai-report-topK" min="1" value="40" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 12px;">Presence Penalty</label>
+                                <input type="number" id="ai-report-presencePenalty" step="0.1" value="0.0" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-size: 12px;">Frequency Penalty</label>
+                                <input type="number" id="ai-report-frequencyPenalty" step="0.1" value="0.0" style="width: 100%; padding: 6px; border: 1px solid var(--border-color); border-radius: 4px;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <button class="btn btn-primary" onclick="generateAIReport()" style="width: 100%;">리포트 생성하기</button>
+                    </div>
+                </div>
+                
+                <!-- 우측: 리포트 출력 -->
+                <div style="flex: 1; display: flex; flex-direction: column; border-left: 1px solid var(--border-color); padding-left: 20px;">
+                    <div id="ai-report-loading" style="display: none; text-align: center; padding: 40px;">
+                        <div style="margin-bottom: 20px;">
+                            <div class="spinner" style="width: 40px; height: 40px; border: 4px solid var(--border-color); border-top-color: var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                        </div>
+                        <div id="ai-report-progress-text" style="color: var(--text-muted); font-size: 14px; margin-top: 16px;">
+                            리포트를 준비하고 있어요...
+                        </div>
+                        <div id="ai-report-progress-bar" style="width: 100%; height: 4px; background: var(--bg-secondary); border-radius: 2px; margin-top: 20px; overflow: hidden;">
+                            <div id="ai-report-progress-fill" style="height: 100%; background: var(--primary-color); width: 0%; transition: width 0.3s ease;"></div>
+                        </div>
+                    </div>
+                    <div id="ai-report-result" style="display: none; flex: 1; overflow-y: auto;">
+                        <div class="form-group">
+                            <label class="form-label">생성된 리포트</label>
+                            <div id="ai-report-content" style="background: var(--bg-secondary); padding: 16px; border-radius: 4px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; min-height: 200px;"></div>
+                        </div>
+                    </div>
+                    <div id="ai-report-empty" style="text-align: center; padding: 40px; color: var(--text-muted);">
+                        좌측에서 리포트를 생성해주세요.
+                    </div>
+                </div>
+                <style>
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
             </div>
         </div>
     </div>

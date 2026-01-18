@@ -6,6 +6,10 @@ import { userId, uiState, saveUiState, config, alertRulesData, setAlertRulesData
 import { showToast, switchTab } from '../ui.js';
 import { loadConfig, updateYouTubePlayer } from '../sse.js';
 import { startStockHighlight } from './stocks.js';
+import { 
+    startSocialNewsAutoSlide, stopSocialNewsAutoSlide, renderSocialNews,
+    startTrafficAutoSlide, stopTrafficAutoSlide, renderTraffic
+} from './social.js';
 
 /**
  * Open settings modal
@@ -60,6 +64,26 @@ function populateSettingsForm() {
     }
     if (slideIntervalInput) {
         slideIntervalInput.value = uiState.news.slideInterval || 5;
+    }
+
+    // Social news tab
+    const socialNewsAutoSlideCheckbox = document.getElementById('settings-social-news-auto-slide');
+    const socialNewsSlideIntervalInput = document.getElementById('settings-social-news-slide-interval');
+    if (socialNewsAutoSlideCheckbox) {
+        socialNewsAutoSlideCheckbox.checked = uiState.socialNews.autoSlide;
+    }
+    if (socialNewsSlideIntervalInput) {
+        socialNewsSlideIntervalInput.value = uiState.socialNews.slideInterval || 5;
+    }
+
+    // Traffic tab
+    const trafficAutoSlideCheckbox = document.getElementById('settings-traffic-auto-slide');
+    const trafficSlideIntervalInput = document.getElementById('settings-traffic-slide-interval');
+    if (trafficAutoSlideCheckbox) {
+        trafficAutoSlideCheckbox.checked = uiState.traffic.autoSlide;
+    }
+    if (trafficSlideIntervalInput) {
+        trafficSlideIntervalInput.value = uiState.traffic.slideInterval || 5;
     }
 
     // System tab
@@ -131,6 +155,10 @@ export async function saveSettings() {
     const autoHighlight = document.getElementById('settings-auto-highlight')?.checked !== false;
     const autoSlide = document.getElementById('settings-auto-slide')?.checked || false;
     const slideInterval = parseInt(document.getElementById('settings-slide-interval')?.value) || 5;
+    const socialNewsAutoSlide = document.getElementById('settings-social-news-auto-slide')?.checked || false;
+    const socialNewsSlideInterval = parseInt(document.getElementById('settings-social-news-slide-interval')?.value) || 5;
+    const trafficAutoSlide = document.getElementById('settings-traffic-auto-slide')?.checked || false;
+    const trafficSlideInterval = parseInt(document.getElementById('settings-traffic-slide-interval')?.value) || 5;
     const cpuWarning = parseInt(document.getElementById('settings-cpu-warning')?.value) || 70;
     const cpuDanger = parseInt(document.getElementById('settings-cpu-danger')?.value) || 90;
     const memWarning = parseInt(document.getElementById('settings-mem-warning')?.value) || 70;
@@ -141,6 +169,10 @@ export async function saveSettings() {
     uiState.stocks.autoHighlight = autoHighlight;
     uiState.news.autoSlide = autoSlide;
     uiState.news.slideInterval = slideInterval;
+    uiState.socialNews.autoSlide = socialNewsAutoSlide;
+    uiState.socialNews.slideInterval = socialNewsSlideInterval;
+    uiState.traffic.autoSlide = trafficAutoSlide;
+    uiState.traffic.slideInterval = trafficSlideInterval;
     uiState.system.cpuWarning = cpuWarning;
     uiState.system.cpuDanger = cpuDanger;
     uiState.system.memWarning = memWarning;
@@ -172,6 +204,22 @@ export async function saveSettings() {
                 config.youtubeUrl = youtubeUrl;
             }
             startStockHighlight();
+            
+            // Update social news and traffic auto slide
+            if (uiState.socialNews.autoSlide) {
+                startSocialNewsAutoSlide();
+            } else {
+                stopSocialNewsAutoSlide();
+            }
+            renderSocialNews();
+            
+            if (uiState.traffic.autoSlide) {
+                startTrafficAutoSlide();
+            } else {
+                stopTrafficAutoSlide();
+            }
+            renderTraffic();
+            
             closeSettings();
         } else {
             throw new Error('Failed to save');

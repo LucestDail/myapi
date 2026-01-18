@@ -10,6 +10,8 @@ server:
 spring:
   application:
     name: myapi
+  main:
+    allow-bean-definition-overriding: true
   
   # MVC 설정
   mvc:
@@ -29,6 +31,22 @@ spring:
       max-lifetime: 1800000
       # Initialize SQLite PRAGMA settings on every new connection
       connection-init-sql: "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=30000; PRAGMA synchronous=NORMAL; PRAGMA cache_size=10000; PRAGMA foreign_keys=true;"
+    # News Database Configuration
+    # 환경변수로 설정: NEWS_DB_JDBC_URL, NEWS_DB_USERNAME, NEWS_DB_PASSWORD
+    news:
+      jdbc-url: ${NEWS_DB_JDBC_URL:}
+      username: ${NEWS_DB_USERNAME:}
+      password: ${NEWS_DB_PASSWORD:}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      hikari:
+        connection-timeout: 30000
+        maximum-pool-size: 5
+        minimum-idle: 1
+        idle-timeout: 600000
+        max-lifetime: 1800000
+        connection-test-query: SELECT 1
+        validation-timeout: 5000
+        leak-detection-threshold: 60000
   
   jpa:
     hibernate:
@@ -38,6 +56,15 @@ spring:
     properties:
       hibernate:
         format_sql: true
+    # News JPA Configuration
+    news:
+      properties:
+        hibernate:
+          dialect: org.hibernate.dialect.MySQLDialect
+          format_sql: true
+      show-sql: false
+      hibernate:
+        ddl-auto: none
 
 # 로깅 설정
 logging:
@@ -54,21 +81,43 @@ logging:
     org.hibernate.engine.jdbc.spi.SqlExceptionHelper: OFF
     org.springframework.orm.jpa: WARN
     com.example.myapi.filter.UserIdentificationFilter: INFO
+    com.example.myapi: DEBUG
 
 # Finnhub API
 # API Key는 환경변수 FINNHUB_API_KEY로 설정
 finnhub:
   base-url: https://finnhub.io/api/v1
-  api-key: ${FINNHUB_API_KEY}
+  api-key: ${FINNHUB_API_KEY:}
 
 # OpenWeatherMap API
 # API Key는 환경변수 OPENWEATHER_API_KEY로 설정
 openweather:
   base-url: https://api.openweathermap.org
-  api-key: ${OPENWEATHER_API_KEY}
+  api-key: ${OPENWEATHER_API_KEY:}
 
 # 공공데이터포털 미세먼지 API
-# 인증키 (Decoding 버전 저장, 코드에서 자동 인코딩)
+# 인증키는 환경변수 AIRKOREA_API_KEY로 설정 (Decoding 버전 저장, 코드에서 자동 인코딩)
 airkorea:
   base-url: https://apis.data.go.kr/B552584/UlfptcaAlarmInqireSvc
-  api-key: ${AIRKOREA_API_KEY}
+  api-key: ${AIRKOREA_API_KEY:}
+
+# 긴급재난문자 API
+# Service Key는 환경변수 EMERGENCY_API_SERVICE_KEY로 설정
+emergency:
+  api:
+    url: https://www.safetydata.go.kr/V2/api/DSSP-IF-00247
+    serviceKey: ${EMERGENCY_API_SERVICE_KEY:}
+
+# 교통돌발상황 API
+# API Key는 환경변수 TRAFFIC_API_KEY로 설정
+traffic:
+  api:
+    url: https://openapi.its.go.kr:9443/eventInfo
+    key: ${TRAFFIC_API_KEY:}
+
+# Gemini API
+# API Key는 환경변수 GEMINI_API_KEY로 설정
+gemini:
+  api:
+    model: gemini-3-flash-preview
+    key: ${GEMINI_API_KEY:}
