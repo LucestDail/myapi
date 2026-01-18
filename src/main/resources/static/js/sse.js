@@ -31,7 +31,9 @@ export async function loadConfig() {
         });
         const configData = await response.json();
         setConfig(configData);
-        updateYouTubePlayer(configData.youtubeUrl);
+        if (configData.youtubeUrl) {
+            updateYouTubePlayer(configData.youtubeUrl);
+        }
         connectSSE();
     } catch (error) {
         console.error('Failed to load config:', error);

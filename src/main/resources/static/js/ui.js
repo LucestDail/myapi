@@ -83,25 +83,25 @@ export function updateTime() {
     
     const now = new Date();
     
-    // Format date manually to avoid duplication
+    // Format date manually: 2026년1월18일(일) 13:15:32
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
     const day = now.getDate();
     const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
     const weekday = weekdays[now.getDay()];
     
-    const dateStr = `${year}년 ${month}월 ${day}일 (${weekday})`;
-    const timeStr = now.toLocaleTimeString('ko-KR', { 
-        hour: '2-digit', 
-        minute: '2-digit', 
-        second: '2-digit',
-        hour12: false
-    });
+    // Format time as HH:mm:ss
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const timeStr = `${hours}:${minutes}:${seconds}`;
     
-    const formatted = `${dateStr} ${timeStr}`;
+    // Format: 2026년1월18일(일) 13:15:32 (공백 포함)
+    const formatted = `${year}년${month}월${day}일(${weekday}) ${timeStr}`;
     
     // Apply flip animation
-    const chars = formatted.split('');
+    // 공백을 HTML 엔티티로 변환하여 렌더링 보장
+    const chars = formatted.split('').map(char => char === ' ' ? '\u00A0' : char);
     const currentText = timeEl.textContent;
     
     let html = '';

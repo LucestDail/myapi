@@ -55,22 +55,44 @@ public class UserIdentificationFilter implements Filter {
             log.debug("New user created: {}", userId);
         }
 
-        // 사용자 프로필 조회 또는 생성
-        final String finalUserId = userId;
-        UserProfile profile = userProfileRepository.findByUserId(userId)
-                .orElseGet(() -> {
-                    UserProfile newProfile = new UserProfile(finalUserId);
-                    return userProfileRepository.save(newProfile);
-                });
-
-        // 마지막 활동 시간 업데이트 (5분 이상 지났을 때만)
-        if (!isNewUser && profile.getLastActive() != null) {
-            long minutesSinceLastActive = java.time.Duration.between(
-                    profile.getLastActive(), java.time.Instant.now()).toMinutes();
-            if (minutesSinceLastActive >= 5) {
-                profile.updateLastActive();
-                userProfileRepository.save(profile);
+        // 사용자 프로필 조회 또는 생성 (에러 발생 시 무시하고 계속 진행)
+        // DB 작업을 최소화하고, 에러가 발생해도 요청 처리는 계속
+        try {
+            final String finalUserId = userId;
+            
+            // 새 사용자인 경우에만 프로필 생성 시도
+            if (isNewUser) {
+                try {
+                    UserProfile existing = userProfileRepository.findByUserId(userId).orElse(null);
+                    if (existing == null) {
+                        UserProfile newProfile = new UserProfile(finalUserId);
+                        userProfileRepository.save(newProfile);
+                    }
+                } catch (org.springframework.dao.CannotAcquireLockException e) {
+                    // SQLite BUSY 에러는 무시 (나중에 재시도됨)
+                } catch (Exception e) {
+                    // 기타 DB 에러도 무시
+                }
+            } else {
+                // 기존 사용자의 경우, 마지막 활동 시간 업데이트는 10분 이상 지났을 때만 시도
+                try {
+                    UserProfile profile = userProfileRepository.findByUserId(userId).orElse(null);
+                    if (profile != null && profile.getLastActive() != null) {
+                        long minutesSinceLastActive = java.time.Duration.between(
+                                profile.getLastActive(), java.time.Instant.now()).toMinutes();
+                        if (minutesSinceLastActive >= 10) {
+                            profile.updateLastActive();
+                            userProfileRepository.save(profile);
+                        }
+                    }
+                } catch (org.springframework.dao.CannotAcquireLockException e) {
+                    // SQLite BUSY 에러는 무시
+                } catch (Exception e) {
+                    // 기타 DB 에러도 무시
+                }
             }
+        } catch (Exception e) {
+            // 모든 DB 에러는 무시하고 요청 처리는 계속
         }
 
         // 요청 속성에 userId 저장

@@ -16,15 +16,23 @@ import { incrementPomodoro } from './productivity.js';
  */
 export async function initTimer() {
     try {
-        const response = await fetch('/api/timer', {
+        // Try to get latest timer or create new one
+        const mode = uiState.timer.mode;
+        const response = await fetch(`/api/timer/${mode}`, {
             headers: { 'X-User-Id': userId }
         });
         if (response.ok) {
-            setTimerData(await response.json());
+            const data = await response.json();
+            setTimerData(data);
+            syncTimerUI();
+        } else if (response.status === 404) {
+            // Timer doesn't exist yet, that's OK
             syncTimerUI();
         }
     } catch (error) {
         console.error('Failed to load timer:', error);
+        // Continue without timer data
+        syncTimerUI();
     }
 }
 
@@ -160,21 +168,18 @@ export function setTimerMode(mode) {
  * Start timer
  */
 export async function startTimer() {
-    const totalSeconds = uiState.timer.mode === 'pomodoro' 
+    const mode = uiState.timer.mode;
+    const totalSeconds = mode === 'pomodoro' 
         ? POMODORO_WORK_DURATION 
         : uiState.timer.duration * 60;
 
     try {
-        const response = await fetch('/api/timer/start', {
+        const response = await fetch(`/api/timer/${mode}/start`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
                 'X-User-Id': userId 
-            },
-            body: JSON.stringify({
-                type: uiState.timer.mode.toUpperCase(),
-                totalSeconds: timerRemainingSeconds || totalSeconds
-            })
+            }
         });
 
         if (response.ok) {
@@ -191,8 +196,9 @@ export async function startTimer() {
  * Pause timer
  */
 export async function pauseTimer() {
+    const mode = uiState.timer.mode;
     try {
-        const response = await fetch('/api/timer/pause', {
+        const response = await fetch(`/api/timer/${mode}/pause`, {
             method: 'POST',
             headers: { 'X-User-Id': userId }
         });
@@ -208,47 +214,37 @@ export async function pauseTimer() {
 }
 
 /**
- * Resume timer
+ * Resume timer (same as start)
  */
 export async function resumeTimer() {
-    try {
-        const response = await fetch('/api/timer/resume', {
-            method: 'POST',
-            headers: { 'X-User-Id': userId }
-        });
-
-        if (response.ok) {
-            setTimerData(await response.json());
-            startTimerInterval();
-            updateTimerDisplay();
-        }
-    } catch (error) {
-        console.error('Failed to resume timer:', error);
-    }
+    await startTimer();
 }
 
 /**
  * Reset timer
  */
 export async function resetTimer() {
+    const mode = uiState.timer.mode;
     try {
-        const response = await fetch('/api/timer/reset', {
+        const response = await fetch(`/api/timer/${mode}/stop`, {
             method: 'POST',
             headers: { 'X-User-Id': userId }
         });
 
         if (response.ok) {
             setTimerData(await response.json());
-            stopTimerInterval();
-            const totalSeconds = uiState.timer.mode === 'pomodoro' 
-                ? POMODORO_WORK_DURATION 
-                : uiState.timer.duration * 60;
-            setTimerRemainingSeconds(totalSeconds);
-            updateTimerDisplay();
         }
     } catch (error) {
         console.error('Failed to reset timer:', error);
     }
+    
+    // Reset timer UI
+    stopTimerInterval();
+    const totalSeconds = mode === 'pomodoro' 
+        ? POMODORO_WORK_DURATION 
+        : uiState.timer.duration * 60;
+    setTimerRemainingSeconds(totalSeconds);
+    updateTimerDisplay();
 }
 
 /**

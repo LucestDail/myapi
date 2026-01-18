@@ -11,10 +11,14 @@ import javax.sql.DataSource;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * Database Configuration
  * - Ensures data directory exists before database connection
+ * - Enables WAL mode for better concurrent access
  */
 @Configuration
 public class DatabaseConfig {
@@ -33,7 +37,32 @@ public class DatabaseConfig {
                 .type(HikariDataSource.class)
                 .build();
         
+        // SQLite configuration for better concurrency
+        // Note: Connection initialization SQL is set in application.yml
+        // This ensures PRAGMA settings are applied to every new connection
+        
+        // Initialize WAL mode on first connection (redundant but ensures it's set)
+        enableWalMode(dataSource);
+        
         return dataSource;
+    }
+    
+    /**
+     * Enable WAL mode on database connections for better concurrency
+     */
+    private void enableWalMode(HikariDataSource dataSource) {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            // Enable WAL mode (allows multiple readers and one writer concurrently)
+            stmt.execute("PRAGMA journal_mode=WAL");
+            // Set busy timeout
+            stmt.execute("PRAGMA busy_timeout=30000");
+            // Optimize for concurrent access
+            stmt.execute("PRAGMA synchronous=NORMAL");
+            stmt.execute("PRAGMA cache_size=10000");
+        } catch (SQLException e) {
+            System.err.println("Warning: Failed to configure SQLite WAL mode: " + e.getMessage());
+        }
     }
 
     private void ensureDataDirectoryExists() {

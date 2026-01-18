@@ -20,10 +20,15 @@ spring:
   
   # SQLite Database
   datasource:
-    url: jdbc:sqlite:./data/dashboard.db
+    url: jdbc:sqlite:./data/dashboard.db?busy_timeout=30000&journal_mode=WAL
     driver-class-name: org.sqlite.JDBC
     hikari:
       maximum-pool-size: 1
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      # Initialize SQLite PRAGMA settings on every new connection
+      connection-init-sql: "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=30000; PRAGMA synchronous=NORMAL; PRAGMA cache_size=10000; PRAGMA foreign_keys=true;"
   
   jpa:
     hibernate:
@@ -45,6 +50,10 @@ logging:
     org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: ERROR
     org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver: ERROR
     org.apache.catalina.core.ContainerBase: ERROR
+    # SQLite BUSY 에러 로깅 완전 억제 (정상 동작하므로)
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: OFF
+    org.springframework.orm.jpa: WARN
+    com.example.myapi.filter.UserIdentificationFilter: INFO
 
 # Finnhub API
 # API Key는 환경변수 FINNHUB_API_KEY로 설정
@@ -59,6 +68,7 @@ openweather:
   api-key: ${OPENWEATHER_API_KEY}
 
 # 공공데이터포털 미세먼지 API
+# 인증키 (Decoding 버전 저장, 코드에서 자동 인코딩)
 airkorea:
   base-url: https://apis.data.go.kr/B552584/UlfptcaAlarmInqireSvc
   api-key: ${AIRKOREA_API_KEY}

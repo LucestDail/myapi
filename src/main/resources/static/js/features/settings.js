@@ -163,7 +163,14 @@ export async function saveSettings() {
 
         if (response.ok) {
             showToast('설정이 저장되었습니다', 'info');
-            updateYouTubePlayer(youtubeUrl);
+            // Only update YouTube player if URL actually changed
+            if (config && config.youtubeUrl !== youtubeUrl) {
+                updateYouTubePlayer(youtubeUrl);
+            }
+            // Update config
+            if (config) {
+                config.youtubeUrl = youtubeUrl;
+            }
             startStockHighlight();
             closeSettings();
         } else {

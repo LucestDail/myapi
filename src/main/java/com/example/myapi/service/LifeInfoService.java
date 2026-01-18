@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -113,16 +114,45 @@ public class LifeInfoService {
 
         try {
             // API 호출
-            String encodedKey = URLEncoder.encode(airKoreaProperties.getApiKey(), StandardCharsets.UTF_8);
+            String apiKey = airKoreaProperties.getApiKey();
+            if (apiKey == null || apiKey.isBlank()) {
+                log.warn("Air Korea API key is not configured. Using default air quality values.");
+                return AirQualityResponse.of(location, 40, 25, Instant.now());
+            }
+            
+            // 공공데이터포털 API는 인코딩된 키를 직접 사용해야 함
+            // YAML에는 디코딩된 키를 저장하고, 여기서 URL 인코딩 수행
+            // 공공데이터포털 API의 특수 요구사항에 맞춰 URLEncoder 사용
+            String serviceKey;
+            if (apiKey.contains("%")) {
+                // 이미 인코딩된 키인 경우 그대로 사용
+                serviceKey = apiKey;
+            } else {
+                // 디코딩된 키를 URL 인코딩 (+ -> %2B, = -> %3D 등)
+                serviceKey = URLEncoder.encode(apiKey, StandardCharsets.UTF_8);
+            }
+            
             int year = LocalDate.now().getYear();
             
+            // 공공데이터포털 API는 인코딩된 serviceKey를 직접 받으므로
+            // UriComponentsBuilder 대신 직접 URL 구성 (serviceKey는 이미 인코딩됨)
+            String baseUrl = airKoreaProperties.getBaseUrl();
             String url = String.format(
                 "%s/getUlfptcaAlarmInfo?serviceKey=%s&returnType=json&numOfRows=100&pageNo=1&year=%d",
-                airKoreaProperties.getBaseUrl(), encodedKey, year
+                baseUrl, serviceKey, year
             );
             
-            log.debug("Calling Air Korea API: {}", url);
-            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            log.debug("Calling Air Korea API for location: {} - URL: {}", location, url.replace(serviceKey, "***"));
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.getForEntity(url, String.class);
+            } catch (org.springframework.web.client.HttpClientErrorException.Unauthorized e) {
+                log.warn("Air Korea API returned 401 Unauthorized. Please verify the API key in application.yml. Using default values.");
+                return AirQualityResponse.of(location, 40, 25, Instant.now());
+            } catch (org.springframework.web.client.HttpClientErrorException e) {
+                log.warn("Air Korea API error ({}): {}. Using default values.", e.getStatusCode(), e.getMessage());
+                return AirQualityResponse.of(location, 40, 25, Instant.now());
+            }
             
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 JsonNode root = objectMapper.readTree(response.getBody());
@@ -172,7 +202,8 @@ public class LifeInfoService {
                 return result;
             }
         } catch (Exception e) {
-            log.error("Failed to fetch air quality from API: {}", e.getMessage());
+            log.error("Failed to fetch air quality from API: {} - {}. Using default values.", 
+                     e.getClass().getSimpleName(), e.getMessage());
         }
 
         // API 실패 시 기본값 반환

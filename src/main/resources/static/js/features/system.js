@@ -97,7 +97,9 @@ export async function updateSystemExtended(systemData) {
     // Server uptime
     const uptimeEl = document.getElementById('server-uptime');
     if (uptimeEl && systemData) {
-        uptimeEl.textContent = formatUptime(systemData.uptimeMillis);
+        uptimeEl.innerHTML = `
+            <div style="font-size: 12px; font-weight: 600;">${formatUptime(systemData.uptimeMillis)}</div>
+        `;
     }
 }
 
@@ -123,12 +125,11 @@ function updateDiskInfo(disks) {
     const freeGB = formatBytes(diskInfo.freeSpace);
     
     diskUsedEl.innerHTML = `
-        <div style="font-size: 11px; font-weight: 600;">${diskPercent}%</div>
-        <div style="font-size: 9px; color: var(--text-muted); margin-top: 2px;">
-            ${usedGB} / ${totalGB}
-        </div>
-        <div style="font-size: 8px; color: var(--text-muted);">
-            여유: ${freeGB}
+        <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;">${diskPercent}%</div>
+        <div style="font-size: 9px; color: var(--text-secondary); line-height: 1.4;">
+            <div>사용: ${usedGB}</div>
+            <div>전체: ${totalGB}</div>
+            <div>여유: ${freeGB}</div>
         </div>
     `;
     diskBarEl.style.width = `${diskPercent}%`;
@@ -154,17 +155,21 @@ function updateNetworkInfo() {
         measureNetworkSpeed().then(speed => {
             if (speed) {
                 networkTextEl.innerHTML = `
-                    <div style="font-size: 11px; font-weight: 600;">Online</div>
-                    <div style="font-size: 9px; color: var(--text-muted); margin-top: 2px;">
-                        ${speed}
+                    <div style="font-size: 12px; font-weight: 600; margin-bottom: 4px;">Online</div>
+                    <div style="font-size: 9px; color: var(--text-secondary);">
+                        지연: ${speed}
                     </div>
                 `;
             } else {
-                networkTextEl.textContent = 'Online';
+                networkTextEl.innerHTML = `
+                    <div style="font-size: 12px; font-weight: 600;">Online</div>
+                `;
             }
         });
     } else {
-        networkTextEl.textContent = 'Offline';
+        networkTextEl.innerHTML = `
+            <div style="font-size: 12px; font-weight: 600; color: var(--accent-red);">Offline</div>
+        `;
     }
 }
 

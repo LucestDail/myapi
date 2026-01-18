@@ -258,7 +258,9 @@ export async function loadQuote() {
     if (!textEl || !authorEl) return;
     
     try {
-        const response = await fetch('https://api.quotable.io/random?tags=inspirational,motivational');
+        const response = await fetch('https://api.quotable.io/random?tags=inspirational,motivational', {
+            timeout: 5000
+        });
         if (response.ok) {
             const data = await response.json();
             textEl.textContent = `"${data.content}"`;
@@ -267,9 +269,12 @@ export async function loadQuote() {
             throw new Error('API failed');
         }
     } catch (error) {
+        // Use fallback quotes if API fails (network error, timeout, etc.)
         const fallbackQuotes = [
             { content: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
-            { content: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" }
+            { content: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+            { content: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
+            { content: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt" }
         ];
         const quote = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
         textEl.textContent = `"${quote.content}"`;
