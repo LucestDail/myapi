@@ -19,11 +19,11 @@ import {
 import { renderWeather, toggleWeatherFavorite } from './features/weather.js';
 import { 
     loadLifeInfo, renderWorldClock, renderDdayList, openDdayModal, 
-    deleteDday, loadQuote 
+    closeDdayModal, saveDday, deleteDday, loadQuote 
 } from './features/lifeinfo.js';
 import { 
     renderNews, toggleNewsAutoSlide, startNewsAutoSlide, 
-    stopNewsAutoSlide, changeNewsPage 
+    stopNewsAutoSlide, changeNewsPage, initNewsAutoSlide
 } from './features/news.js';
 import { 
     loadTodos, setTodoFilter, addTodo, handleTodoKeypress,
@@ -35,7 +35,8 @@ import {
 } from './features/timer.js';
 import { 
     renderFocusStats, loadMemo, handleMemoInput, 
-    renderBookmarks, openBookmarkModal, deleteBookmark 
+    renderBookmarks, openBookmarkModal, closeBookmarkModal, 
+    saveBookmark, previewBookmark, deleteBookmark 
 } from './features/productivity.js';
 import { renderSystem, loadSystemHistory, setHistoryPeriod } from './features/system.js';
 import { 
@@ -70,6 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadLifeInfo();
     loadSystemHistory();
     startStockHighlight();
+    initNewsAutoSlide();
     
     // New features init
     renderWorldClock();
@@ -106,6 +108,8 @@ window.toggleWeatherFavorite = toggleWeatherFavorite;
 
 // Life Info Functions
 window.openDdayModal = openDdayModal;
+window.closeDdayModal = closeDdayModal;
+window.saveDday = saveDday;
 window.deleteDday = deleteDday;
 window.loadQuote = loadQuote;
 
@@ -132,6 +136,9 @@ window.updateTimerDuration = updateTimerDuration;
 // Productivity Functions
 window.handleMemoInput = handleMemoInput;
 window.openBookmarkModal = openBookmarkModal;
+window.closeBookmarkModal = closeBookmarkModal;
+window.saveBookmark = saveBookmark;
+window.previewBookmark = previewBookmark;
 window.deleteBookmark = deleteBookmark;
 
 // System Functions

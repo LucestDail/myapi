@@ -86,6 +86,19 @@ export function renderNews() {
 }
 
 /**
+ * Initialize news auto slide checkbox
+ */
+export function initNewsAutoSlide() {
+    const checkbox = document.getElementById('news-auto-slide');
+    if (checkbox) {
+        checkbox.checked = uiState.news.autoSlide;
+        if (uiState.news.autoSlide) {
+            startNewsAutoSlide();
+        }
+    }
+}
+
+/**
  * Toggle news auto slide
  */
 export function toggleNewsAutoSlide() {

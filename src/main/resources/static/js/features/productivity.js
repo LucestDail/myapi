@@ -59,24 +59,23 @@ export function renderFocusStats() {
         week = 0;
     }
 
+    container.className = 'focus-stats-grid';
     container.innerHTML = `
-        <div class="focus-stats-grid">
-            <div class="focus-stat-card highlight">
-                <div class="focus-stat-value">${today}</div>
-                <div class="focus-stat-label">오늘 뽀모도로</div>
-            </div>
-            <div class="focus-stat-card">
-                <div class="focus-stat-value">${week}</div>
-                <div class="focus-stat-label">이번 주</div>
-            </div>
-            <div class="focus-stat-card">
-                <div class="focus-stat-value">${focusStats.total}</div>
-                <div class="focus-stat-label">전체</div>
-            </div>
-            <div class="focus-stat-card">
-                <div class="focus-stat-value">${Math.round(focusStats.total * 25 / 60)}h</div>
-                <div class="focus-stat-label">총 집중 시간</div>
-            </div>
+        <div class="focus-stat-card highlight">
+            <div class="focus-stat-value">${today}</div>
+            <div class="focus-stat-label">오늘 뽀모도로</div>
+        </div>
+        <div class="focus-stat-card">
+            <div class="focus-stat-value">${week}</div>
+            <div class="focus-stat-label">이번 주</div>
+        </div>
+        <div class="focus-stat-card">
+            <div class="focus-stat-value">${focusStats.total}</div>
+            <div class="focus-stat-label">전체</div>
+        </div>
+        <div class="focus-stat-card">
+            <div class="focus-stat-value">${Math.round(focusStats.total * 25 / 60)}h</div>
+            <div class="focus-stat-label">총 집중 시간</div>
         </div>
     `;
 }
@@ -153,11 +152,93 @@ export function renderBookmarks() {
  * Open bookmark modal
  */
 export function openBookmarkModal() {
-    const name = prompt('북마크 이름:');
-    if (!name) return;
+    const modal = document.getElementById('bookmark-modal');
+    if (modal) {
+        document.getElementById('bookmark-name').value = '';
+        document.getElementById('bookmark-url').value = '';
+        document.getElementById('bookmark-preview').style.display = 'none';
+        modal.classList.add('active');
+    }
+}
+
+/**
+ * Close bookmark modal
+ */
+export function closeBookmarkModal() {
+    const modal = document.getElementById('bookmark-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+/**
+ * Preview bookmark (load thumbnail)
+ */
+export async function previewBookmark() {
+    const urlInput = document.getElementById('bookmark-url');
+    const previewEl = document.getElementById('bookmark-preview');
     
-    const url = prompt('URL:');
-    if (!url) return;
+    if (!urlInput || !previewEl) return;
+    
+    const url = urlInput.value.trim();
+    if (!url) {
+        previewEl.style.display = 'none';
+        return;
+    }
+    
+    try {
+        new URL(url);
+    } catch {
+        previewEl.style.display = 'none';
+        return;
+    }
+    
+    previewEl.style.display = 'block';
+    previewEl.innerHTML = `
+        <div class="bookmark-preview-loading">미리보기 로딩 중...</div>
+    `;
+    
+    // Try to get favicon and basic info
+    try {
+        const domain = new URL(url).hostname;
+        const favicon = `https://www.google.com/s2/favicons?domain=${domain}&sz=64`;
+        
+        previewEl.innerHTML = `
+            <div class="bookmark-preview-content">
+                <img src="${favicon}" alt="" class="bookmark-preview-favicon" onerror="this.style.display='none'">
+                <div class="bookmark-preview-info">
+                    <div class="bookmark-preview-domain">${domain}</div>
+                    <div class="bookmark-preview-url">${url}</div>
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        previewEl.innerHTML = `
+            <div class="bookmark-preview-content">
+                <div class="bookmark-preview-info">
+                    <div class="bookmark-preview-url">${url}</div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Save bookmark
+ */
+export function saveBookmark() {
+    const name = document.getElementById('bookmark-name')?.value.trim();
+    const url = document.getElementById('bookmark-url')?.value.trim();
+    
+    if (!name) {
+        showToast('이름을 입력하세요', 'warning');
+        return;
+    }
+    
+    if (!url) {
+        showToast('URL을 입력하세요', 'warning');
+        return;
+    }
 
     try {
         new URL(url);
@@ -169,6 +250,7 @@ export function openBookmarkModal() {
     const newList = [...bookmarksList, { name, url }];
     setBookmarksList(newList);
     renderBookmarks();
+    closeBookmarkModal();
     showToast('북마크가 추가되었습니다', 'info');
 }
 

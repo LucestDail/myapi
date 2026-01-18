@@ -81,15 +81,17 @@ export function renderSystem(systemData, timestamp) {
 /**
  * Update extended system info (disk, uptime, network)
  */
-export function updateSystemExtended(systemData) {
-    // Disk usage (simulated - would need actual API)
-    const diskUsedEl = document.getElementById('disk-used');
-    const diskBarEl = document.getElementById('disk-bar');
-    if (diskUsedEl && diskBarEl) {
-        const diskPercent = 45; // Simulated
-        diskUsedEl.textContent = `${diskPercent}%`;
-        diskBarEl.style.width = `${diskPercent}%`;
-        diskBarEl.style.background = diskPercent > 90 ? 'var(--accent-red)' : diskPercent > 70 ? 'var(--accent-yellow)' : 'var(--accent-cyan)';
+export async function updateSystemExtended(systemData) {
+    // Fetch full system status for disk info
+    try {
+        const response = await fetch('/api/system/status');
+        if (response.ok) {
+            const fullStatus = await response.json();
+            updateDiskInfo(fullStatus.disks);
+            updateNetworkInfo();
+        }
+    } catch (error) {
+        console.error('Failed to fetch system status:', error);
     }
 
     // Server uptime
@@ -97,15 +99,100 @@ export function updateSystemExtended(systemData) {
     if (uptimeEl && systemData) {
         uptimeEl.textContent = formatUptime(systemData.uptimeMillis);
     }
+}
 
-    // Network status
+/**
+ * Update disk information
+ */
+function updateDiskInfo(disks) {
+    const diskUsedEl = document.getElementById('disk-used');
+    const diskBarEl = document.getElementById('disk-bar');
+    if (!diskUsedEl || !diskBarEl || !disks) return;
+    
+    // Get the primary disk (usually "/" or "C:\")
+    const diskEntries = Object.entries(disks);
+    if (diskEntries.length === 0) return;
+    
+    // Find the root disk
+    const rootDisk = diskEntries.find(([path]) => path === '/' || path === 'C:\\') || diskEntries[0];
+    const diskInfo = rootDisk[1];
+    
+    const diskPercent = Math.round(diskInfo.usagePercent);
+    const usedGB = formatBytes(diskInfo.usedSpace);
+    const totalGB = formatBytes(diskInfo.totalSpace);
+    const freeGB = formatBytes(diskInfo.freeSpace);
+    
+    diskUsedEl.innerHTML = `
+        <div style="font-size: 11px; font-weight: 600;">${diskPercent}%</div>
+        <div style="font-size: 9px; color: var(--text-muted); margin-top: 2px;">
+            ${usedGB} / ${totalGB}
+        </div>
+        <div style="font-size: 8px; color: var(--text-muted);">
+            여유: ${freeGB}
+        </div>
+    `;
+    diskBarEl.style.width = `${diskPercent}%`;
+    diskBarEl.style.background = diskPercent > 90 ? 'var(--accent-red)' : diskPercent > 70 ? 'var(--accent-yellow)' : 'var(--accent-cyan)';
+}
+
+/**
+ * Update network information
+ */
+let lastNetworkCheck = Date.now();
+let networkSpeed = null;
+
+function updateNetworkInfo() {
     const networkDotEl = document.getElementById('network-dot');
     const networkTextEl = document.getElementById('network-text');
-    if (networkDotEl && networkTextEl) {
-        const online = navigator.onLine;
-        networkDotEl.className = `network-dot ${online ? 'online' : 'offline'}`;
-        networkTextEl.textContent = online ? 'Online' : 'Offline';
+    if (!networkDotEl || !networkTextEl) return;
+    
+    const online = navigator.onLine;
+    networkDotEl.className = `network-dot ${online ? 'online' : 'offline'}`;
+    
+    if (online) {
+        // Try to measure network speed
+        measureNetworkSpeed().then(speed => {
+            if (speed) {
+                networkTextEl.innerHTML = `
+                    <div style="font-size: 11px; font-weight: 600;">Online</div>
+                    <div style="font-size: 9px; color: var(--text-muted); margin-top: 2px;">
+                        ${speed}
+                    </div>
+                `;
+            } else {
+                networkTextEl.textContent = 'Online';
+            }
+        });
+    } else {
+        networkTextEl.textContent = 'Offline';
     }
+}
+
+/**
+ * Measure network speed (simple ping test)
+ */
+async function measureNetworkSpeed() {
+    const now = Date.now();
+    if (now - lastNetworkCheck < 5000) {
+        return networkSpeed; // Return cached value
+    }
+    lastNetworkCheck = now;
+    
+    try {
+        const startTime = performance.now();
+        const response = await fetch('/api/system/status', { cache: 'no-cache' });
+        const endTime = performance.now();
+        
+        if (response.ok) {
+            const latency = Math.round(endTime - startTime);
+            networkSpeed = `${latency}ms`;
+            return networkSpeed;
+        }
+    } catch (error) {
+        // Ignore errors
+    }
+    
+    return null;
 }
 
 /**

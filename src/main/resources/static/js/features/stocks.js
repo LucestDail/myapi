@@ -195,9 +195,14 @@ export function updateStockHighlight() {
     const symbol = getHighlightedSymbol();
     if (!symbol) return;
     
-    // Update highlight in UI
+    // Update highlight in UI with smooth transition
     document.querySelectorAll('.stock-item').forEach(item => {
-        item.classList.toggle('highlighted', item.dataset.symbol === symbol);
+        const wasHighlighted = item.classList.contains('highlighted');
+        const shouldHighlight = item.dataset.symbol === symbol;
+        
+        if (wasHighlighted !== shouldHighlight) {
+            item.classList.toggle('highlighted', shouldHighlight);
+        }
     });
     
     // Fetch news for highlighted stock
@@ -244,8 +249,8 @@ export async function loadStockNews(symbol) {
             return;
         }
         
-        // Display top 5 news
-        const newsHtml = stockNewsData.slice(0, 5).map(news => {
+        // Display top 3 news
+        const newsHtml = stockNewsData.slice(0, 3).map(news => {
             const pubDate = news.pubDate ? formatNewsDate(news.pubDate) : '';
             return `
                 <a class="stock-news-item" href="${news.link}" target="_blank" rel="noopener noreferrer">

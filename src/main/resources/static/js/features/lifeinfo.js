@@ -196,18 +196,45 @@ export function renderDdayList() {
  * Open D-Day modal
  */
 export function openDdayModal() {
-    const title = prompt('D-Day 제목:');
-    if (!title) return;
+    const modal = document.getElementById('dday-modal');
+    if (modal) {
+        document.getElementById('dday-title').value = '';
+        document.getElementById('dday-date').value = '';
+        modal.classList.add('active');
+    }
+}
+
+/**
+ * Close D-Day modal
+ */
+export function closeDdayModal() {
+    const modal = document.getElementById('dday-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+/**
+ * Save D-Day
+ */
+export function saveDday() {
+    const title = document.getElementById('dday-title')?.value.trim();
+    const date = document.getElementById('dday-date')?.value;
     
-    const date = prompt('날짜 (YYYY-MM-DD):');
-    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        showToast('올바른 날짜 형식을 입력하세요 (예: 2025-12-25)', 'warning');
+    if (!title) {
+        showToast('제목을 입력하세요', 'warning');
+        return;
+    }
+    
+    if (!date) {
+        showToast('날짜를 선택하세요', 'warning');
         return;
     }
 
     const newList = [...ddayList, { title, date }].sort((a, b) => new Date(a.date) - new Date(b.date));
     setDdayList(newList);
     renderDdayList();
+    closeDdayModal();
     showToast('D-Day가 추가되었습니다', 'info');
 }
 

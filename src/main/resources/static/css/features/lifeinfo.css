@@ -226,3 +226,50 @@
 .quote-refresh:hover {
     color: var(--accent-cyan);
 }
+
+/* Bookmark Preview */
+.bookmark-preview {
+    margin-top: 12px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.bookmark-preview-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.bookmark-preview-favicon {
+    width: 48px;
+    height: 48px;
+    border-radius: 4px;
+}
+
+.bookmark-preview-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bookmark-preview-domain {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.bookmark-preview-url {
+    color: var(--text-muted);
+    font-size: 10px;
+    word-break: break-all;
+}
+
+.bookmark-preview-loading {
+    color: var(--text-muted);
+    font-size: 10px;
+    text-align: center;
+    padding: 8px;
+}

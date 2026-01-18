@@ -67,11 +67,16 @@
     color: var(--accent-red);
 }
 
+.stock-item {
+    transition: all 0.3s ease;
+}
+
 .stock-item.highlighted {
     background: rgba(0, 212, 255, 0.1);
     border-left: 2px solid var(--accent-cyan);
     margin-left: -2px;
     padding-left: 2px;
+    transform: translateX(2px);
 }
 
 .stock-price.flipping,
@@ -84,6 +89,9 @@
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid var(--border-color);
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
 }
 
 .stock-news-header {

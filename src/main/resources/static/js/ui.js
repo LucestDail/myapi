@@ -82,12 +82,23 @@ export function updateTime() {
     if (!timeEl) return;
     
     const now = new Date();
-    const formatted = now.toLocaleTimeString('ko-KR', { 
+    
+    // Format date manually to avoid duplication
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const day = now.getDate();
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    const weekday = weekdays[now.getDay()];
+    
+    const dateStr = `${year}년 ${month}월 ${day}일 (${weekday})`;
+    const timeStr = now.toLocaleTimeString('ko-KR', { 
         hour: '2-digit', 
         minute: '2-digit', 
         second: '2-digit',
         hour12: false
     });
+    
+    const formatted = `${dateStr} ${timeStr}`;
     
     // Apply flip animation
     const chars = formatted.split('');

@@ -153,10 +153,15 @@
 }
 
 /* Focus Stats */
+#focus-container {
+    width: 100%;
+}
+
 .focus-stats-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
+    width: 100%;
 }
 
 .focus-stat-card {
