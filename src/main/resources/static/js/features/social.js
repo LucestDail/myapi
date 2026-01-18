@@ -206,10 +206,10 @@ export function renderEmergency() {
     let html = '<table class="emergency-table"><thead><tr><th>일시</th><th>지역</th><th>내용</th><th>분류</th><th>상세</th></tr></thead><tbody>';
     
     emergencyData.items.slice(0, 30).forEach(item => {
-        const date = item.createDate || '';
+        const date = item.createDate || item.registerDate || '';
         const location = item.locationName || '';
         const content = item.msg || '';
-        const category = item.category || '';
+        const category = item.category || item.emergencyStep || '';
         const detail = item.detail || '';
         
         html += `

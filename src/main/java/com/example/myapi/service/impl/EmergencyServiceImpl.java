@@ -47,50 +47,130 @@ public class EmergencyServiceImpl implements EmergencyService {
             String strToday = sdf.format(System.currentTimeMillis());
             String strYesterday = sdf.format(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
 
-            String strEmergencyInfo = new HttpUtil().executeGet(
-                emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strToday
-            );
-            String strEmergencyInfoYesterday = new HttpUtil().executeGet(
-                emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strYesterday
+            String rawResponse = new HttpUtil().executeGet(
+                emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strToday + "&crtDt=" + strYesterday
             );
             
             // 두 JSON 데이터를 하나로 합치기
             JsonObject combinedJson = new JsonObject();
             JsonArray emergencyArray = new JsonArray();
             
-            // 오늘 데이터 파싱 및 추가
-            if (strEmergencyInfo != null && !strEmergencyInfo.trim().isEmpty()) {
-                JsonObject todayJson = JsonParser.parseString(strEmergencyInfo).getAsJsonObject();
-                if (todayJson.has("body") && !todayJson.get("body").isJsonNull()) {
-                    JsonArray todayItems = todayJson.getAsJsonArray("body");
-                    for (JsonElement item : todayItems) {
-                        emergencyArray.add(item);
+            // 응답이 {today: "...", yesterday: "..."} 형태인지 확인
+            if (rawResponse != null && !rawResponse.trim().isEmpty()) {
+                try {
+                    // 먼저 외부 JSON 파싱 (today/yesterday 구조 확인)
+                    JsonObject outerJson = JsonParser.parseString(rawResponse).getAsJsonObject();
+                    
+                    if (outerJson.has("today") || outerJson.has("yesterday")) {
+                        // today/yesterday 구조인 경우
+                        parseEmergencyDataFromString(outerJson.get("today"), emergencyArray);
+                        parseEmergencyDataFromString(outerJson.get("yesterday"), emergencyArray);
+                    } else if (outerJson.has("body")) {
+                        // 직접 body 구조인 경우 (기존 방식)
+                        JsonArray items = outerJson.getAsJsonArray("body");
+                        for (JsonElement item : items) {
+                            emergencyArray.add(item);
+                        }
+                    }
+                } catch (Exception e) {
+                    // 파싱 실패 시 기존 방식으로 시도
+                    log.warn("Failed to parse as outer JSON, trying direct parsing: {}", e.getMessage());
+                    JsonObject directJson = JsonParser.parseString(rawResponse).getAsJsonObject();
+                    if (directJson.has("body") && !directJson.get("body").isJsonNull()) {
+                        JsonArray items = directJson.getAsJsonArray("body");
+                        for (JsonElement item : items) {
+                            emergencyArray.add(item);
+                        }
                     }
                 }
             }
             
-            // 어제 데이터 파싱 및 추가
-            if (strEmergencyInfoYesterday != null && !strEmergencyInfoYesterday.trim().isEmpty()) {
-                JsonObject yesterdayJson = JsonParser.parseString(strEmergencyInfoYesterday).getAsJsonObject();
-                if (yesterdayJson.has("body") && !yesterdayJson.get("body").isJsonNull()) {
-                    JsonArray yesterdayItems = yesterdayJson.getAsJsonArray("body");
-                    for (JsonElement item : yesterdayItems) {
-                        emergencyArray.add(item);
-                    }
+            // 별도로 오늘과 어제 데이터를 각각 요청하는 방식도 지원
+            if (emergencyArray.size() == 0) {
+                String strEmergencyInfo = new HttpUtil().executeGet(
+                    emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strToday
+                );
+                String strEmergencyInfoYesterday = new HttpUtil().executeGet(
+                    emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strYesterday
+                );
+                
+                // 오늘 데이터 파싱 및 추가
+                if (strEmergencyInfo != null && !strEmergencyInfo.trim().isEmpty()) {
+                    parseEmergencyDataFromString(JsonParser.parseString(strEmergencyInfo), emergencyArray);
                 }
+                
+                // 어제 데이터 파싱 및 추가
+                if (strEmergencyInfoYesterday != null && !strEmergencyInfoYesterday.trim().isEmpty()) {
+                    parseEmergencyDataFromString(JsonParser.parseString(strEmergencyInfoYesterday), emergencyArray);
+                }
+            }
+            
+            // 각 항목을 프론트엔드가 사용하기 쉬운 형식으로 변환
+            JsonArray formattedArray = new JsonArray();
+            for (JsonElement element : emergencyArray) {
+                JsonObject item = element.getAsJsonObject();
+                JsonObject formattedItem = new JsonObject();
+                
+                // 필드 매핑 및 변환
+                formattedItem.addProperty("msg", item.has("MSG_CN") ? item.get("MSG_CN").getAsString() : "");
+                formattedItem.addProperty("locationName", item.has("RCPTN_RGN_NM") ? item.get("RCPTN_RGN_NM").getAsString() : "");
+                formattedItem.addProperty("createDate", item.has("CRT_DT") ? item.get("CRT_DT").getAsString() : "");
+                formattedItem.addProperty("registerDate", item.has("REG_YMD") ? item.get("REG_YMD").getAsString() : "");
+                formattedItem.addProperty("emergencyStep", item.has("EMRG_STEP_NM") ? item.get("EMRG_STEP_NM").getAsString() : "");
+                formattedItem.addProperty("category", item.has("DST_SE_NM") ? item.get("DST_SE_NM").getAsString() : "");
+                formattedItem.addProperty("serialNumber", item.has("SN") ? item.get("SN").getAsLong() : 0);
+                formattedItem.addProperty("modifyDate", item.has("MDFCN_YMD") ? item.get("MDFCN_YMD").getAsString() : "");
+                
+                formattedArray.add(formattedItem);
             }
             
             // 합쳐진 데이터를 새로운 JSON 객체에 추가
-            combinedJson.add("items", emergencyArray);
+            combinedJson.add("items", formattedArray);
             cachedEmergencyData = combinedJson;
             lastUpdateTime = System.currentTimeMillis();
-            log.debug("Successfully updated emergency data with {} items", emergencyArray.size());
+            log.debug("Successfully updated emergency data with {} items", formattedArray.size());
             
         } catch (Exception e) {
-            log.error("Error renewing emergency data: {}", e.getMessage());
+            log.error("Error renewing emergency data: {}", e.getMessage(), e);
             if (cachedEmergencyData == null) {
                 cachedEmergencyData = createEmptyEmergencyJson();
             }
+        }
+    }
+    
+    /**
+     * JSON 문자열이나 JsonElement에서 emergency 데이터를 파싱하여 배열에 추가
+     */
+    private void parseEmergencyDataFromString(JsonElement element, JsonArray targetArray) {
+        if (element == null || element.isJsonNull()) {
+            return;
+        }
+        
+        try {
+            JsonObject jsonObj;
+            
+            // 문자열인 경우 JSON으로 파싱
+            if (element.isJsonPrimitive() && element.getAsJsonPrimitive().isString()) {
+                String jsonString = element.getAsString();
+                if (jsonString == null || jsonString.trim().isEmpty()) {
+                    return;
+                }
+                jsonObj = JsonParser.parseString(jsonString).getAsJsonObject();
+            } else if (element.isJsonObject()) {
+                jsonObj = element.getAsJsonObject();
+            } else {
+                return;
+            }
+            
+            // body 배열 추출
+            if (jsonObj.has("body") && !jsonObj.get("body").isJsonNull()) {
+                JsonArray bodyArray = jsonObj.getAsJsonArray("body");
+                for (JsonElement item : bodyArray) {
+                    targetArray.add(item);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to parse emergency data from element: {}", e.getMessage());
         }
     }
 
