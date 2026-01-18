@@ -233,6 +233,24 @@
     }
 }
 
+/* Mobile - Hide AI Report Button */
+@media (max-width: 768px) {
+    .dashboard-header button.ai-report-btn,
+    .dashboard-header .ai-report-btn,
+    button.settings-btn.ai-report-btn,
+    .ai-report-btn {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        overflow: hidden !important;
+    }
+}
+
 /* Small Mobile */
 @media (max-width: 480px) {
     .dashboard-header {

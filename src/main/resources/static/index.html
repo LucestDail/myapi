@@ -47,7 +47,7 @@
                         <div class="status-dot" id="status-dot"></div>
                         <span class="status-text" id="status-text">연결 중...</span>
                     </div>
-                    <button class="settings-btn" onclick="openAIReportModal()">AI 리포트</button>
+                    <button class="settings-btn ai-report-btn" onclick="openAIReportModal()">AI 리포트</button>
                     <button class="settings-btn" onclick="openSettings()">설정</button>
                 </div>
             </header>
@@ -750,6 +750,53 @@
                 <style>
                     @keyframes spin {
                         to { transform: rotate(360deg); }
+                    }
+                    
+                    /* 모바일 반응형 스타일 */
+                    @media (max-width: 768px) {
+                        /* 모달 모바일 스타일 */
+                        #ai-report-modal .modal {
+                            width: 100vw !important;
+                            height: 100vh !important;
+                            max-width: 100vw !important;
+                            border-radius: 0 !important;
+                        }
+                        
+                        /* 모달 바디를 세로로 배치 */
+                        #ai-report-modal .modal-body {
+                            flex-direction: column !important;
+                            height: calc(100vh - 60px) !important;
+                            padding: 16px !important;
+                            overflow-y: auto !important;
+                            gap: 16px !important;
+                        }
+                        
+                        /* 좌측 패널 */
+                        #ai-report-modal .modal-body > div:first-child {
+                            flex: 0 0 auto !important;
+                            width: 100% !important;
+                            max-height: none !important;
+                        }
+                        
+                        /* 우측 패널 */
+                        #ai-report-modal .modal-body > div:last-child {
+                            flex: 1 1 auto !important;
+                            border-left: none !important;
+                            border-top: 1px solid var(--border-color) !important;
+                            padding-left: 0 !important;
+                            padding-top: 16px !important;
+                            min-height: 300px !important;
+                        }
+                        
+                        /* 리포트 생성 버튼 고정 */
+                        #ai-report-modal .form-group:last-child {
+                            position: sticky;
+                            bottom: 0;
+                            background: var(--bg-primary);
+                            padding-top: 12px;
+                            margin-top: 12px;
+                            border-top: 1px solid var(--border-color);
+                        }
                     }
                 </style>
             </div>
