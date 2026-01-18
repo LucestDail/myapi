@@ -33,6 +33,7 @@ if [ ! -f "$API_KEYS_FILE" ]; then
     echo "# MyAPI Configuration"
     echo "export FINNHUB_API_KEY=\"your_finnhub_api_key_here\""
     echo "export OPENWEATHER_API_KEY=\"your_openweather_api_key_here\""
+    echo "export AIRKOREA_API_KEY=\"your_airkorea_api_key_here\""
     echo "EOF"
     echo "  sudo chmod 600 /etc/myapi/api-keys.conf"
     echo ""
@@ -50,6 +51,11 @@ fi
 
 if [ -z "$OPENWEATHER_API_KEY" ] || [ "$OPENWEATHER_API_KEY" == "your_openweather_api_key_here" ]; then
     echo -e "${RED}❌ OPENWEATHER_API_KEY가 설정되지 않았습니다.${NC}"
+    exit 1
+fi
+
+if [ -z "$AIRKOREA_API_KEY" ] || [ "$AIRKOREA_API_KEY" == "your_airkorea_api_key_here" ]; then
+    echo -e "${RED}❌ AIRKOREA_API_KEY가 설정되지 않았습니다.${NC}"
     exit 1
 fi
 

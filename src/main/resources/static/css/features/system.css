@@ -1,0 +1,244 @@
+/* System Section Styles */
+
+/* System Extended */
+.system-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.system-info-card {
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.system-info-icon {
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.system-info-value {
+    color: var(--accent-cyan);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.system-info-label {
+    color: var(--text-muted);
+    font-size: 8px;
+    margin-top: 2px;
+}
+
+.disk-usage-bar {
+    height: 6px;
+    background: var(--bg-secondary);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 6px;
+}
+
+.disk-usage-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+.network-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.network-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.network-dot.online {
+    background: var(--accent-green);
+    box-shadow: 0 0 6px var(--accent-green);
+}
+
+.network-dot.offline {
+    background: var(--accent-red);
+}
+
+/* System Grid */
+.system-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    font-size: 11px;
+}
+
+.system-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.system-label {
+    color: var(--text-secondary);
+}
+
+.system-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.system-value.warning {
+    color: var(--accent-yellow);
+}
+
+.system-value.danger {
+    color: var(--accent-red);
+}
+
+.system-bar {
+    grid-column: span 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.bar-label {
+    color: var(--text-secondary);
+    width: 40px;
+}
+
+.bar-text {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 8px;
+    color: var(--text-primary);
+    text-shadow: 0 0 2px var(--bg-primary);
+}
+
+.bar-value {
+    color: var(--text-primary);
+    width: 80px;
+    text-align: right;
+    font-size: 10px;
+}
+
+.bar-value.warning {
+    color: var(--accent-yellow);
+}
+
+.bar-value.danger {
+    color: var(--accent-red);
+}
+
+/* System History Chart */
+.system-history {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dotted var(--border-color);
+}
+
+.system-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.system-history-title {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+.system-history-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.history-period-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 2px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 9px;
+    transition: all 0.2s;
+}
+
+.history-period-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.history-period-btn.active {
+    border-color: var(--accent-cyan);
+    background: rgba(0, 212, 255, 0.1);
+    color: var(--accent-cyan);
+}
+
+.system-chart-container {
+    position: relative;
+    height: 80px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.system-chart-canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.system-chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 6px;
+    font-size: 9px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.legend-color {
+    width: 12px;
+    height: 3px;
+    border-radius: 1px;
+}
+
+.legend-color.cpu {
+    background: var(--accent-cyan);
+}
+
+.legend-color.mem {
+    background: var(--accent-yellow);
+}
+
+.legend-color.heap {
+    background: var(--accent-green);
+}
+
+.chart-tooltip {
+    position: absolute;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 10px;
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+}
+
+.chart-tooltip.visible {
+    display: block;
+}

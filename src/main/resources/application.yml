@@ -1,9 +1,50 @@
 server:
   port: 8080
+  tomcat:
+    # SSE 연결을 위한 비동기 처리 설정
+    connection-timeout: 0
+    threads:
+      max: 200
+      min-spare: 10
 
 spring:
   application:
     name: myapi
+  
+  # MVC 설정
+  mvc:
+    throw-exception-if-no-handler-found: false
+  web:
+    resources:
+      add-mappings: true
+  
+  # SQLite Database
+  datasource:
+    url: jdbc:sqlite:./data/dashboard.db
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      maximum-pool-size: 1
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+# 로깅 설정
+logging:
+  level:
+    org.springframework.web.servlet.resource.ResourceHttpRequestHandler: ERROR
+    # SSE 관련 Broken pipe 에러 로깅 억제
+    org.apache.catalina.connector.CoyoteAdapter: ERROR
+    org.apache.coyote.http11.Http11Processor: ERROR
+    org.springframework.web.servlet.mvc.method.annotation.ResponseBodyEmitterReturnValueHandler: ERROR
+    org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: ERROR
+    org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver: ERROR
+    org.apache.catalina.core.ContainerBase: ERROR
 
 # Finnhub API
 # API Key는 환경변수 FINNHUB_API_KEY로 설정
@@ -16,3 +57,8 @@ finnhub:
 openweather:
   base-url: https://api.openweathermap.org
   api-key: ${OPENWEATHER_API_KEY}
+
+# 공공데이터포털 미세먼지 API
+airkorea:
+  base-url: https://apis.data.go.kr/B552584/UlfptcaAlarmInqireSvc
+  api-key: ${AIRKOREA_API_KEY}

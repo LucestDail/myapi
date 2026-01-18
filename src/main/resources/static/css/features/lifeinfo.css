@@ -1,0 +1,228 @@
+/* Life Info Section Styles */
+
+.lifeinfo-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 11px;
+}
+
+.lifeinfo-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.lifeinfo-icon {
+    font-size: 14px;
+    width: 20px;
+    text-align: center;
+}
+
+.lifeinfo-label {
+    color: var(--text-secondary);
+    width: 40px;
+    font-size: 10px;
+}
+
+.lifeinfo-value {
+    flex: 1;
+    color: var(--text-primary);
+    display: flex;
+    gap: 12px;
+}
+
+.lifeinfo-item {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.lifeinfo-item .currency {
+    color: var(--accent-cyan);
+    font-weight: 500;
+}
+
+.lifeinfo-item .value {
+    color: var(--text-primary);
+}
+
+.lifeinfo-item .unit {
+    color: var(--text-muted);
+    font-size: 9px;
+}
+
+.air-quality-badge {
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 500;
+}
+
+.air-quality-badge.good {
+    background: rgba(0, 255, 136, 0.2);
+    color: var(--accent-green);
+}
+
+.air-quality-badge.moderate {
+    background: rgba(255, 215, 0, 0.2);
+    color: var(--accent-yellow);
+}
+
+.air-quality-badge.bad {
+    background: rgba(255, 71, 87, 0.2);
+    color: var(--accent-red);
+}
+
+.air-quality-badge.very-bad {
+    background: rgba(168, 85, 247, 0.2);
+    color: var(--accent-purple);
+}
+
+.holiday-badge {
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    background: rgba(255, 107, 214, 0.2);
+    color: var(--accent-magenta);
+}
+
+.sun-time {
+    color: var(--accent-yellow);
+}
+
+.day-length {
+    color: var(--text-muted);
+    font-size: 10px;
+}
+
+/* World Clock */
+.worldclock-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.worldclock-item {
+    padding: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    text-align: center;
+}
+
+.worldclock-city {
+    color: var(--text-secondary);
+    font-size: 9px;
+    margin-bottom: 4px;
+}
+
+.worldclock-time {
+    color: var(--accent-cyan);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.worldclock-date {
+    color: var(--text-muted);
+    font-size: 8px;
+    margin-top: 2px;
+}
+
+/* D-Day Counter */
+.dday-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dday-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.dday-title {
+    color: var(--text-primary);
+    font-size: 11px;
+}
+
+.dday-count {
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.dday-count.past {
+    color: var(--text-muted);
+}
+
+.dday-count.today {
+    color: var(--accent-green);
+}
+
+.dday-count.future {
+    color: var(--accent-cyan);
+}
+
+.dday-date {
+    color: var(--text-muted);
+    font-size: 9px;
+}
+
+.dday-add-btn {
+    width: 100%;
+    padding: 6px;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 10px;
+    cursor: pointer;
+    margin-top: 4px;
+}
+
+.dday-add-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+/* Quote */
+.quote-container {
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    border-left: 3px solid var(--accent-yellow);
+}
+
+.quote-text {
+    color: var(--text-primary);
+    font-size: 11px;
+    line-height: 1.5;
+    font-style: italic;
+    margin-bottom: 8px;
+}
+
+.quote-author {
+    color: var(--accent-yellow);
+    font-size: 10px;
+    text-align: right;
+}
+
+.quote-refresh {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 10px;
+    cursor: pointer;
+    padding: 4px 8px;
+    margin-top: 8px;
+}
+
+.quote-refresh:hover {
+    color: var(--accent-cyan);
+}

@@ -1,0 +1,18 @@
+/* CSS Variables - Colors, Fonts */
+:root {
+    --bg-primary: #0d0d0d;
+    --bg-secondary: #1a1a1a;
+    --bg-tertiary: #252525;
+    --border-color: #3d3d3d;
+    --border-accent: #5c5c5c;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0a0;
+    --text-muted: #666;
+    --accent-yellow: #ffd700;
+    --accent-cyan: #00d4ff;
+    --accent-green: #00ff88;
+    --accent-red: #ff4757;
+    --accent-magenta: #ff6bd6;
+    --accent-purple: #a855f7;
+    --accent-blue: #3b82f6;
+}

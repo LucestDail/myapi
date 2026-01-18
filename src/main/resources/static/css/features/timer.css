@@ -1,0 +1,188 @@
+/* Timer Section Styles */
+
+.timer-container {
+    text-align: center;
+    padding: 8px 0;
+}
+
+.timer-mode-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.timer-mode-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    transition: all 0.2s;
+}
+
+.timer-mode-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.timer-mode-btn.active {
+    border-color: var(--accent-cyan);
+    background: rgba(0, 212, 255, 0.1);
+    color: var(--accent-cyan);
+}
+
+.timer-display {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 16px;
+}
+
+.timer-circle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.timer-circle-bg {
+    fill: none;
+    stroke: var(--bg-tertiary);
+    stroke-width: 6;
+}
+
+.timer-circle-progress {
+    fill: none;
+    stroke: var(--accent-cyan);
+    stroke-width: 6;
+    stroke-linecap: round;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    transition: stroke-dashoffset 0.5s ease;
+}
+
+.timer-circle-progress.break {
+    stroke: var(--accent-green);
+}
+
+.timer-time {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.timer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.timer-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.timer-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.timer-btn.primary {
+    background: var(--accent-cyan);
+    border-color: var(--accent-cyan);
+    color: var(--bg-primary);
+}
+
+.timer-btn.primary:hover {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+.timer-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.timer-status {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.timer-status.running {
+    color: var(--accent-green);
+}
+
+.timer-status.paused {
+    color: var(--accent-yellow);
+}
+
+.timer-status.break {
+    color: var(--accent-cyan);
+}
+
+.pomodoro-count {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    font-size: 16px;
+}
+
+.pomodoro-icon {
+    opacity: 0.3;
+}
+
+.pomodoro-icon.completed {
+    opacity: 1;
+}
+
+.timer-duration-input {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.timer-duration-input label {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.timer-duration-input input {
+    width: 60px;
+    padding: 4px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 11px;
+    text-align: center;
+}
+
+.timer-duration-input input:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+}

@@ -1,0 +1,56 @@
+/* Weather Section Styles */
+
+.weather-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+}
+
+.weather-item {
+    display: grid;
+    grid-template-columns: 16px 70px 20px 50px 40px;
+    align-items: center;
+    padding: 4px 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    gap: 8px;
+}
+
+.weather-favorite {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 10px;
+    text-align: center;
+}
+
+.weather-favorite.active {
+    color: var(--accent-yellow);
+}
+
+.weather-city-name {
+    color: var(--text-primary);
+    text-align: left;
+}
+
+.weather-icon {
+    font-size: 12px;
+    text-align: center;
+}
+
+.weather-temp {
+    color: var(--accent-cyan);
+    font-weight: 600;
+    text-align: right;
+}
+
+.weather-humidity {
+    color: var(--text-muted);
+    font-size: 10px;
+    text-align: right;
+}
+
+.weather-alert {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid var(--accent-yellow);
+}

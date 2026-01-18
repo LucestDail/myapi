@@ -1,7 +1,9 @@
 package com.example.myapi.controller;
 
+import com.example.myapi.dto.alert.AlertEventDto;
 import com.example.myapi.dto.dashboard.DashboardConfig;
 import com.example.myapi.dto.dashboard.DashboardData;
+import com.example.myapi.service.AlertIntegrationService;
 import com.example.myapi.service.DashboardService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -27,12 +29,16 @@ public class DashboardController {
     private static final long SSE_TIMEOUT = 0L; // 무한 타임아웃
     
     private final DashboardService dashboardService;
+    private final AlertIntegrationService alertIntegrationService;
     private final ObjectMapper objectMapper;
     private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    public DashboardController(DashboardService dashboardService, ObjectMapper objectMapper) {
+    public DashboardController(DashboardService dashboardService, 
+                              AlertIntegrationService alertIntegrationService,
+                              ObjectMapper objectMapper) {
         this.dashboardService = dashboardService;
+        this.alertIntegrationService = alertIntegrationService;
         this.objectMapper = objectMapper;
         startDataBroadcaster();
     }
@@ -77,8 +83,13 @@ public class DashboardController {
                 emitter.send(SseEmitter.event()
                         .name("dashboard")
                         .data(objectMapper.writeValueAsString(fullData)));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                emitters.remove(emitter);
             } catch (Exception e) {
-                log.error("Failed to send initial data: {}", e.getMessage());
+                // Client disconnected during initial data send - just remove
+                emitters.remove(emitter);
+                log.debug("Initial data send failed (client disconnected): {}", e.getMessage());
             }
         });
 
@@ -146,28 +157,103 @@ public class DashboardController {
 
         DashboardData data = dashboardService.getFullData();
         broadcast("dashboard", data);
+
+        // 알림 조건 검사
+        try {
+            if (data.stocks() != null && data.stocks().quotes() != null) {
+                alertIntegrationService.checkStockAlerts(data.stocks().quotes());
+            }
+            if (data.weather() != null) {
+                alertIntegrationService.checkWeatherAlerts(data.weather());
+            }
+        } catch (Exception e) {
+            log.debug("Alert check error: {}", e.getMessage());
+        }
     }
 
     private void broadcastSystemData() {
         if (emitters.isEmpty()) return;
 
-        DashboardData data = DashboardData.system(dashboardService.getSystemData());
+        DashboardData.SystemData systemData = dashboardService.getSystemData();
+        DashboardData data = DashboardData.system(systemData);
         broadcast("system", data);
+
+        // 시스템 알림 조건 검사
+        try {
+            alertIntegrationService.checkSystemAlerts(systemData);
+        } catch (Exception e) {
+            log.debug("System alert check error: {}", e.getMessage());
+        }
     }
 
     private void broadcast(String eventName, DashboardData data) {
+        if (emitters.isEmpty()) return;
+        
+        String jsonData;
+        try {
+            jsonData = objectMapper.writeValueAsString(data);
+        } catch (Exception e) {
+            log.error("Failed to serialize data: {}", e.getMessage());
+            return;
+        }
+
         List<SseEmitter> deadEmitters = new CopyOnWriteArrayList<>();
 
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event()
                         .name(eventName)
-                        .data(objectMapper.writeValueAsString(data)));
+                        .data(jsonData));
             } catch (Exception e) {
+                // Any error means client disconnected - just mark for removal
                 deadEmitters.add(emitter);
             }
         }
 
-        emitters.removeAll(deadEmitters);
+        if (!deadEmitters.isEmpty()) {
+            emitters.removeAll(deadEmitters);
+            log.debug("Removed {} dead emitters. Active: {}", deadEmitters.size(), emitters.size());
+        }
+    }
+
+    /**
+     * 알림 브로드캐스트
+     */
+    public void broadcastAlert(AlertEventDto alert) {
+        if (emitters.isEmpty()) return;
+
+        String jsonData;
+        try {
+            jsonData = objectMapper.writeValueAsString(alert);
+        } catch (Exception e) {
+            log.error("Failed to serialize alert: {}", e.getMessage());
+            return;
+        }
+
+        List<SseEmitter> deadEmitters = new CopyOnWriteArrayList<>();
+
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("alert")
+                        .data(jsonData));
+            } catch (Exception e) {
+                // Any error means client disconnected - just mark for removal
+                deadEmitters.add(emitter);
+            }
+        }
+
+        if (!deadEmitters.isEmpty()) {
+            emitters.removeAll(deadEmitters);
+            log.debug("Removed {} dead emitters after alert. Active: {}", deadEmitters.size(), emitters.size());
+        }
+    }
+
+    /**
+     * 현재 연결 수 조회
+     */
+    @GetMapping("/connections")
+    public ResponseEntity<Integer> getConnectionCount() {
+        return ResponseEntity.ok(emitters.size());
     }
 }

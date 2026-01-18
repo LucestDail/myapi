@@ -1,0 +1,74 @@
+/* Sections - Common Section Styles */
+
+/* Section visibility based on mode */
+.section[data-mode] {
+    display: none;
+}
+
+.section[data-mode].mode-visible {
+    display: block;
+}
+
+/* Section */
+.section {
+    border-bottom: 1px dashed var(--border-color);
+    padding: 12px 16px;
+}
+
+.section.collapsed .section-body {
+    display: none;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.section.collapsed .section-header {
+    margin-bottom: 0;
+}
+
+.section-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-toggle {
+    color: var(--text-muted);
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+.section.collapsed .section-toggle {
+    transform: rotate(-90deg);
+}
+
+.section-title {
+    color: var(--accent-yellow);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.section-time {
+    color: var(--text-muted);
+    font-size: 9px;
+}
+
+.section-body {
+    transition: all 0.2s ease;
+}
+
+/* Section Controls */
+.section-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}

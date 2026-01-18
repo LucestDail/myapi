@@ -4,704 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MyAPI Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-primary: #0d0d0d;
-            --bg-secondary: #1a1a1a;
-            --bg-tertiary: #252525;
-            --border-color: #3d3d3d;
-            --border-accent: #5c5c5c;
-            --text-primary: #e0e0e0;
-            --text-secondary: #a0a0a0;
-            --text-muted: #666;
-            --accent-yellow: #ffd700;
-            --accent-cyan: #00d4ff;
-            --accent-green: #00ff88;
-            --accent-red: #ff4757;
-            --accent-magenta: #ff6bd6;
-            --accent-purple: #a855f7;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'JetBrains Mono', 'Noto Sans KR', monospace;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow: hidden;
-        }
-
-        .container {
-            display: grid;
-            grid-template-columns: 1fr 420px;
-            height: 100vh;
-            gap: 0;
-        }
-
-        /* Left: YouTube */
-        .youtube-section {
-            background: var(--bg-primary);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        .youtube-wrapper {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .youtube-wrapper iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            border-radius: 8px;
-        }
-
-        /* Right: Dashboard */
-        .dashboard-section {
-            background: var(--bg-secondary);
-            border-left: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* Header */
-        .dashboard-header {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--bg-tertiary);
-        }
-
-        .dashboard-title {
-            color: var(--accent-cyan);
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-
-        .dashboard-time {
-            color: var(--text-secondary);
-            font-size: 12px;
-        }
-
-        /* Settings Button */
-        .settings-btn {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 11px;
-            transition: all 0.2s;
-        }
-
-        .settings-btn:hover {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-        }
-
-        /* Dashboard Content */
-        .dashboard-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0;
-        }
-
-        .dashboard-content::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .dashboard-content::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
-        }
-
-        .dashboard-content::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 3px;
-        }
-
-        /* Section */
-        .section {
-            border-bottom: 1px dashed var(--border-color);
-            padding: 12px 16px;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .section-title {
-            color: var(--accent-yellow);
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-
-        .section-time {
-            color: var(--text-muted);
-            font-size: 9px;
-        }
-
-        /* Stocks */
-        .stock-list {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            font-size: 11px;
-        }
-
-        .stock-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 0;
-            border-bottom: 1px dotted var(--border-color);
-        }
-
-        .stock-item:last-child {
-            border-bottom: none;
-        }
-
-        .stock-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .stock-symbol {
-            color: var(--accent-cyan);
-            font-weight: 600;
-            min-width: 50px;
-        }
-
-        .stock-name {
-            color: var(--text-secondary);
-            font-size: 10px;
-        }
-
-        .stock-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .stock-price {
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-
-        .stock-change {
-            font-size: 10px;
-            min-width: 100px;
-            text-align: right;
-        }
-
-        .stock-change.positive {
-            color: var(--accent-green);
-        }
-
-        .stock-change.negative {
-            color: var(--accent-red);
-        }
-
-        /* Weather */
-        .weather-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-            font-size: 11px;
-        }
-
-        .weather-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 8px;
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-        }
-
-        .weather-city {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .weather-icon {
-            font-size: 12px;
-        }
-
-        .weather-city-name {
-            color: var(--text-primary);
-        }
-
-        .weather-info {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .weather-temp {
-            color: var(--accent-cyan);
-            font-weight: 600;
-        }
-
-        .weather-humidity {
-            color: var(--text-muted);
-            font-size: 10px;
-        }
-
-        /* News */
-        .news-list {
-            font-size: 11px;
-        }
-
-        .news-item {
-            padding: 6px 0;
-            border-bottom: 1px dotted var(--border-color);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .news-item:last-child {
-            border-bottom: none;
-        }
-
-        .news-item:hover {
-            background: var(--bg-tertiary);
-            margin: 0 -8px;
-            padding: 6px 8px;
-        }
-
-        .news-title {
-            color: var(--text-primary);
-            line-height: 1.4;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-
-        .news-meta {
-            color: var(--text-muted);
-            font-size: 9px;
-            margin-top: 2px;
-        }
-
-        .news-section-title {
-            color: var(--accent-magenta);
-            font-size: 10px;
-            font-weight: 600;
-            margin: 10px 0 6px 0;
-            padding-top: 8px;
-            border-top: 1px dotted var(--border-color);
-        }
-
-        .news-section-title:first-child {
-            margin-top: 0;
-            padding-top: 0;
-            border-top: none;
-        }
-
-        /* System */
-        .system-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            font-size: 11px;
-        }
-
-        .system-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .system-label {
-            color: var(--text-secondary);
-        }
-
-        .system-value {
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-
-        .system-bar {
-            grid-column: span 2;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .bar-label {
-            color: var(--text-secondary);
-            width: 40px;
-        }
-
-        .bar-container {
-            flex: 1;
-            height: 8px;
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .bar-fill {
-            height: 100%;
-            background: var(--accent-green);
-            transition: width 0.3s ease;
-        }
-
-        .bar-fill.warning {
-            background: var(--accent-yellow);
-        }
-
-        .bar-fill.danger {
-            background: var(--accent-red);
-        }
-
-        .bar-value {
-            color: var(--text-primary);
-            width: 50px;
-            text-align: right;
-            font-size: 10px;
-        }
-
-        /* Server Info */
-        .server-info {
-            padding: 8px 16px;
-            background: var(--bg-tertiary);
-            border-top: 1px solid var(--border-color);
-            font-size: 10px;
-            color: var(--text-muted);
-            text-align: center;
-        }
-
-        /* Settings Modal */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-        }
-
-        .modal {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .modal-header {
-            padding: 16px 20px;
-            background: var(--bg-tertiary);
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-title {
-            color: var(--accent-cyan);
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .modal-close {
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 20px;
-            cursor: pointer;
-            padding: 4px 8px;
-            transition: color 0.2s;
-        }
-
-        .modal-close:hover {
-            color: var(--accent-red);
-        }
-
-        .modal-body {
-            padding: 20px;
-            overflow-y: auto;
-            flex: 1;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            display: block;
-            color: var(--text-secondary);
-            font-size: 11px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            color: var(--text-primary);
-            font-family: inherit;
-            font-size: 12px;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--accent-cyan);
-        }
-
-        .form-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .ticker-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .ticker-item {
-            display: grid;
-            grid-template-columns: 100px 1fr 32px;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .ticker-remove {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--accent-red);
-            width: 28px;
-            height: 28px;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .ticker-remove:hover {
-            background: var(--accent-red);
-            color: white;
-            border-color: var(--accent-red);
-        }
-
-        .add-ticker-btn {
-            background: transparent;
-            border: 1px dashed var(--border-color);
-            color: var(--text-secondary);
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 12px;
-            transition: all 0.2s;
-            margin-top: 8px;
-        }
-
-        .add-ticker-btn:hover {
-            border-color: var(--accent-green);
-            color: var(--accent-green);
-        }
-
-        .modal-footer {
-            padding: 16px 20px;
-            background: var(--bg-tertiary);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 12px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .btn-secondary {
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--text-primary);
-            color: var(--text-primary);
-        }
-
-        .btn-primary {
-            background: var(--accent-cyan);
-            border: 1px solid var(--accent-cyan);
-            color: var(--bg-primary);
-        }
-
-        .btn-primary:hover {
-            background: transparent;
-            color: var(--accent-cyan);
-        }
-
-        /* Connection Status */
-        .connection-status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--text-muted);
-        }
-
-        .status-dot.connected {
-            background: var(--accent-green);
-            box-shadow: 0 0 8px var(--accent-green);
-        }
-
-        .status-dot.disconnected {
-            background: var(--accent-red);
-        }
-
-        .status-text {
-            font-size: 10px;
-            color: var(--text-muted);
-        }
-
-        /* Loading */
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            color: var(--text-muted);
-        }
-
-        .loading::after {
-            content: '';
-            width: 16px;
-            height: 16px;
-            border: 2px solid var(--border-color);
-            border-top-color: var(--accent-cyan);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-left: 8px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* No data */
-        .no-data {
-            color: var(--text-muted);
-            font-size: 11px;
-            font-style: italic;
-            padding: 8px 0;
-        }
-
-        /* News Pagination */
-        .news-pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px dotted var(--border-color);
-        }
-
-        .news-pagination button {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            padding: 4px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-family: inherit;
-            font-size: 10px;
-            transition: all 0.2s;
-        }
-
-        .news-pagination button:hover:not(:disabled) {
-            border-color: var(--accent-cyan);
-            color: var(--accent-cyan);
-        }
-
-        .news-pagination button:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-
-        .news-pagination .page-info {
-            color: var(--text-muted);
-            font-size: 10px;
-            min-width: 60px;
-            text-align: center;
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .container {
-                grid-template-columns: 1fr;
-                grid-template-rows: 45vh 1fr;
-            }
-
-            .dashboard-section {
-                border-left: none;
-                border-top: 1px solid var(--border-color);
-            }
-        }
-    </style>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Modules -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/sections.css">
+    <link rel="stylesheet" href="css/modal.css">
+    <link rel="stylesheet" href="css/features/stocks.css">
+    <link rel="stylesheet" href="css/features/weather.css">
+    <link rel="stylesheet" href="css/features/lifeinfo.css">
+    <link rel="stylesheet" href="css/features/news.css">
+    <link rel="stylesheet" href="css/features/todo.css">
+    <link rel="stylesheet" href="css/features/timer.css">
+    <link rel="stylesheet" href="css/features/system.css">
 </head>
 <body>
     <div class="container">
@@ -729,79 +47,458 @@
                         <div class="status-dot" id="status-dot"></div>
                         <span class="status-text" id="status-text">연결 중...</span>
                     </div>
-                    <button class="settings-btn" onclick="openSettings()">⚙ 설정</button>
+                    <button class="settings-btn" onclick="openSettings()">설정</button>
                 </div>
             </header>
 
+            <!-- Dashboard Mode Tabs -->
+            <div class="dashboard-mode-tabs">
+                <button class="mode-tab active" data-mode="all" onclick="setDashboardMode('all')">
+                    <span class="mode-tab-icon">◈</span>전체
+                </button>
+                <button class="mode-tab" data-mode="finance" onclick="setDashboardMode('finance')">
+                    <span class="mode-tab-icon">$</span>금융
+                </button>
+                <button class="mode-tab" data-mode="life" onclick="setDashboardMode('life')">
+                    <span class="mode-tab-icon">☀</span>생활
+                </button>
+                <button class="mode-tab" data-mode="productivity" onclick="setDashboardMode('productivity')">
+                    <span class="mode-tab-icon">✓</span>생산성
+                </button>
+                <button class="mode-tab" data-mode="system" onclick="setDashboardMode('system')">
+                    <span class="mode-tab-icon">▣</span>시스템
+                </button>
+            </div>
+
             <div class="dashboard-content">
                 <!-- Stocks Section -->
-                <div class="section">
-                    <div class="section-header">
-                        <span class="section-title">[ STOCKS ]</span>
+                <div class="section" id="stocks-section" data-section="stocks" data-mode="finance">
+                    <div class="section-header" onclick="toggleSection('stocks')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ STOCKS ]</span>
+                        </div>
                         <span class="section-time" id="stocks-time"></span>
                     </div>
-                    <div class="stock-list" id="stocks-container">
-                        <div class="loading">데이터 로딩 중</div>
+                    <div class="section-body">
+                        <div class="section-controls">
+                            <button class="control-btn active" data-filter="all" onclick="setStockFilter('all')">전체</button>
+                            <button class="control-btn" data-filter="up" onclick="setStockFilter('up')">상승</button>
+                            <button class="control-btn" data-filter="down" onclick="setStockFilter('down')">하락</button>
+                            <button class="control-btn" data-sort="percentChange" onclick="toggleStockSort()">정렬: 변화율</button>
+                        </div>
+                        <div class="stock-list" id="stocks-container">
+                            <div class="loading">데이터 로딩 중</div>
+                        </div>
+                        <div class="stock-news-container" id="stock-news-container">
+                            <div class="stock-news-header">
+                                <span><span class="stock-news-ticker" id="stock-news-ticker">-</span> 관련 뉴스</span>
+                                <span id="stock-news-time"></span>
+                            </div>
+                            <div class="stock-news-list" id="stock-news-list">
+                                <div class="stock-news-empty">티커를 선택하면 관련 뉴스가 표시됩니다</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Weather Section -->
-                <div class="section">
-                    <div class="section-header">
-                        <span class="section-title">[ WEATHER ]</span>
+                <div class="section" id="weather-section" data-section="weather" data-mode="life">
+                    <div class="section-header" onclick="toggleSection('weather')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ WEATHER ]</span>
+                        </div>
                         <span class="section-time" id="weather-time"></span>
                     </div>
-                    <div class="weather-grid" id="weather-container">
-                        <div class="loading">데이터 로딩 중</div>
+                    <div class="section-body">
+                        <div class="weather-list" id="weather-container">
+                            <div class="loading">데이터 로딩 중</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Life Info Section -->
+                <div class="section" id="lifeinfo-section" data-section="lifeinfo" data-mode="life">
+                    <div class="section-header" onclick="toggleSection('lifeinfo')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ LIFE INFO ]</span>
+                        </div>
+                        <span class="section-time" id="lifeinfo-time"></span>
+                    </div>
+                    <div class="section-body">
+                        <div class="lifeinfo-grid" id="lifeinfo-container">
+                            <div class="loading">데이터 로딩 중</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- World Clock Section -->
+                <div class="section" id="worldclock-section" data-section="worldclock" data-mode="life">
+                    <div class="section-header" onclick="toggleSection('worldclock')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ WORLD CLOCK ]</span>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <div class="worldclock-grid" id="worldclock-container"></div>
+                    </div>
+                </div>
+
+                <!-- D-Day Section -->
+                <div class="section" id="dday-section" data-section="dday" data-mode="life">
+                    <div class="section-header" onclick="toggleSection('dday')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ D-DAY ]</span>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <div class="dday-list" id="dday-container"></div>
+                        <button class="dday-add-btn" onclick="openDdayModal()">+ D-Day 추가</button>
+                    </div>
+                </div>
+
+                <!-- Quote Section -->
+                <div class="section" id="quote-section" data-section="quote" data-mode="life">
+                    <div class="section-header" onclick="toggleSection('quote')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ QUOTE ]</span>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <div class="quote-container" id="quote-container">
+                            <div class="quote-text" id="quote-text">Loading...</div>
+                            <div class="quote-author" id="quote-author"></div>
+                        </div>
+                        <button class="quote-refresh" onclick="loadQuote()">↻ 새로운 명언</button>
                     </div>
                 </div>
 
                 <!-- News Section -->
-                <div class="section">
-                    <div class="section-header">
-                        <span class="section-title">[ NEWS ]</span>
+                <div class="section" id="news-section" data-section="news" data-mode="finance">
+                    <div class="section-header" onclick="toggleSection('news')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ NEWS ]</span>
+                        </div>
                         <span class="section-time" id="news-time"></span>
                     </div>
-                    <div class="news-list" id="news-container">
-                        <div class="loading">데이터 로딩 중</div>
+                    <div class="section-body">
+                        <div class="section-controls">
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="news-auto-slide" onchange="toggleNewsAutoSlide()">
+                                <span>자동 슬라이드</span>
+                            </label>
+                        </div>
+                        <div class="news-container" id="news-container">
+                            <div class="loading">데이터 로딩 중</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Todo Section -->
+                <div class="section" id="todo-section" data-section="todo" data-mode="productivity">
+                    <div class="section-header" onclick="toggleSection('todo')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ TODO ]</span>
+                        </div>
+                        <span class="section-time" id="todo-time"></span>
+                    </div>
+                    <div class="section-body">
+                        <div class="section-controls">
+                            <button class="control-btn active" data-todo-filter="all" onclick="setTodoFilter('all')">전체</button>
+                            <button class="control-btn" data-todo-filter="pending" onclick="setTodoFilter('pending')">진행중</button>
+                            <button class="control-btn" data-todo-filter="completed" onclick="setTodoFilter('completed')">완료</button>
+                        </div>
+                        <div class="todo-list" id="todo-container">
+                            <div class="loading">데이터 로딩 중</div>
+                        </div>
+                        <div class="todo-input-container">
+                            <input type="text" class="todo-input" id="todo-input" placeholder="새 할 일 추가..." onkeypress="handleTodoKeypress(event)">
+                            <button class="todo-add-btn" onclick="addTodo()">추가</button>
+                        </div>
+                        <div class="todo-stats" id="todo-stats"></div>
+                    </div>
+                </div>
+
+                <!-- Timer Section -->
+                <div class="section" id="timer-section" data-section="timer" data-mode="productivity">
+                    <div class="section-header" onclick="toggleSection('timer')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ TIMER ]</span>
+                        </div>
+                        <span class="section-time" id="timer-time"></span>
+                    </div>
+                    <div class="section-body">
+                        <div class="timer-container" id="timer-container">
+                            <div class="timer-mode-tabs">
+                                <button class="timer-mode-btn active" data-mode="timer" onclick="setTimerMode('timer')">타이머</button>
+                                <button class="timer-mode-btn" data-mode="pomodoro" onclick="setTimerMode('pomodoro')">포모도로</button>
+                            </div>
+                            <div class="timer-duration-input" id="timer-duration-input">
+                                <label>시간(분):</label>
+                                <input type="number" id="timer-duration" value="25" min="1" max="120" onchange="updateTimerDuration()">
+                            </div>
+                            <div class="timer-display">
+                                <svg class="timer-circle" viewBox="0 0 140 140">
+                                    <circle class="timer-circle-bg" cx="70" cy="70" r="62"></circle>
+                                    <circle class="timer-circle-progress" id="timer-progress" cx="70" cy="70" r="62" 
+                                            stroke-dasharray="389.56" stroke-dashoffset="0"></circle>
+                                </svg>
+                                <div class="timer-time" id="timer-time">25:00</div>
+                            </div>
+                            <div class="timer-status" id="timer-status">대기 중</div>
+                            <div class="timer-controls">
+                                <button class="timer-btn" onclick="resetTimer()" title="리셋">⏹</button>
+                                <button class="timer-btn primary" id="timer-play-btn" onclick="startTimer()" title="시작">▶</button>
+                            </div>
+                            <div class="pomodoro-count" id="pomodoro-count">
+                                <span class="pomodoro-icon">🍅</span>
+                                <span class="pomodoro-icon">🍅</span>
+                                <span class="pomodoro-icon">🍅</span>
+                                <span class="pomodoro-icon">🍅</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Focus Stats Section -->
+                <div class="section" id="focus-section" data-section="focus" data-mode="productivity">
+                    <div class="section-header" onclick="toggleSection('focus')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ FOCUS STATS ]</span>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <div class="focus-stats-grid" id="focus-container"></div>
+                    </div>
+                </div>
+
+                <!-- Quick Memo Section -->
+                <div class="section" id="memo-section" data-section="memo" data-mode="productivity">
+                    <div class="section-header" onclick="toggleSection('memo')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ QUICK MEMO ]</span>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <div class="memo-container">
+                            <textarea class="memo-textarea" id="memo-textarea" placeholder="메모를 입력하세요..." oninput="handleMemoInput(event)"></textarea>
+                            <div class="memo-footer">
+                                <span class="memo-status" id="memo-status"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bookmarks Section -->
+                <div class="section" id="bookmarks-section" data-section="bookmarks" data-mode="productivity">
+                    <div class="section-header" onclick="toggleSection('bookmarks')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ BOOKMARKS ]</span>
+                        </div>
+                    </div>
+                    <div class="section-body">
+                        <div class="bookmarks-grid" id="bookmarks-container"></div>
                     </div>
                 </div>
 
                 <!-- System Section -->
-                <div class="section">
-                    <div class="section-header">
-                        <span class="section-title">[ SYSTEM ]</span>
+                <div class="section" id="system-section" data-section="system" data-mode="system">
+                    <div class="section-header" onclick="toggleSection('system')">
+                        <div class="section-header-left">
+                            <span class="section-toggle">▼</span>
+                            <span class="section-title">[ SYSTEM ]</span>
+                        </div>
                         <span class="section-time" id="system-time"></span>
                     </div>
-                    <div class="system-grid" id="system-container">
-                        <div class="loading">데이터 로딩 중</div>
+                    <div class="section-body">
+                        <div class="system-info-grid" id="system-info-container">
+                            <div class="system-info-card">
+                                <div class="system-info-icon">💾</div>
+                                <div class="system-info-value" id="disk-used">-</div>
+                                <div class="system-info-label">디스크</div>
+                                <div class="disk-usage-bar">
+                                    <div class="disk-usage-fill" id="disk-bar" style="width: 0%; background: var(--accent-cyan);"></div>
+                                </div>
+                            </div>
+                            <div class="system-info-card">
+                                <div class="system-info-icon">⏱️</div>
+                                <div class="system-info-value" id="server-uptime">-</div>
+                                <div class="system-info-label">업타임</div>
+                            </div>
+                            <div class="system-info-card">
+                                <div class="system-info-icon">🌐</div>
+                                <div class="network-status">
+                                    <div class="network-dot online" id="network-dot"></div>
+                                    <span class="system-info-value" id="network-text">Online</span>
+                                </div>
+                                <div class="system-info-label">네트워크</div>
+                            </div>
+                        </div>
+                        <div class="system-grid" id="system-container">
+                            <div class="loading">데이터 로딩 중</div>
+                        </div>
+                        <div class="system-history">
+                            <div class="system-history-header">
+                                <span class="system-history-title">사용량 히스토리</span>
+                                <div class="system-history-controls">
+                                    <button class="history-period-btn active" data-period="1h" onclick="setHistoryPeriod('1h')">1h</button>
+                                    <button class="history-period-btn" data-period="24h" onclick="setHistoryPeriod('24h')">24h</button>
+                                    <button class="history-period-btn" data-period="7d" onclick="setHistoryPeriod('7d')">7d</button>
+                                </div>
+                            </div>
+                            <div class="system-chart-container">
+                                <canvas class="system-chart-canvas" id="system-chart"></canvas>
+                                <div class="chart-tooltip" id="chart-tooltip"></div>
+                            </div>
+                            <div class="system-chart-legend">
+                                <span class="legend-item"><span class="legend-color cpu"></span>CPU</span>
+                                <span class="legend-item"><span class="legend-color mem"></span>MEM</span>
+                                <span class="legend-item"><span class="legend-color heap"></span>HEAP</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <div class="server-info">
-                Server: http://localhost:8080 | Exit: Ctrl+C
-            </div>
         </section>
     </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
 
     <!-- Settings Modal -->
     <div class="modal-overlay" id="settings-modal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title">⚙ Dashboard Settings</span>
+                <span class="modal-title">Dashboard Settings</span>
                 <button class="modal-close" onclick="closeSettings()">×</button>
             </div>
+            <div class="modal-tabs">
+                <button class="modal-tab active" data-tab="media" onclick="switchTab('media')">미디어</button>
+                <button class="modal-tab" data-tab="stocks" onclick="switchTab('stocks')">주식</button>
+                <button class="modal-tab" data-tab="news" onclick="switchTab('news')">뉴스</button>
+                <button class="modal-tab" data-tab="system" onclick="switchTab('system')">시스템</button>
+                <button class="modal-tab" data-tab="alerts" onclick="switchTab('alerts')">알림</button>
+            </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">YouTube URL</label>
-                    <input type="text" class="form-input" id="youtube-url" 
-                           placeholder="https://www.youtube.com/watch?v=...">
+                <!-- Media Tab -->
+                <div class="tab-content active" id="tab-media">
+                    <div class="form-group">
+                        <label class="form-label">YouTube URL</label>
+                        <input type="text" class="form-input" id="settings-youtube" 
+                               placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Stock Tickers</label>
-                    <div class="ticker-list" id="ticker-list"></div>
-                    <button class="add-ticker-btn" onclick="addTicker()">+ Add Ticker</button>
+
+                <!-- Stocks Tab -->
+                <div class="tab-content" id="tab-stocks">
+                    <div class="form-group">
+                        <label class="form-label">Stock Tickers</label>
+                        <div class="ticker-list" id="ticker-list"></div>
+                        <button class="add-ticker-btn" onclick="addTicker()">+ Add Ticker</button>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">뉴스 하이라이트</label>
+                        <div class="form-row">
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="settings-auto-highlight" checked>
+                                <span>자동 순환</span>
+                            </label>
+                            <div>
+                                <label class="form-label" style="margin-bottom: 4px;">순환 간격 (초)</label>
+                                <input type="number" class="form-input" id="settings-highlight-interval" value="10" min="5" max="60">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- News Tab -->
+                <div class="tab-content" id="tab-news">
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="settings-auto-slide">
+                            <span>자동 슬라이드 기본값</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">슬라이드 간격 (초)</label>
+                        <input type="number" class="form-input" id="settings-slide-interval" value="5" min="3" max="30">
+                    </div>
+                </div>
+
+                <!-- System Tab -->
+                <div class="tab-content" id="tab-system">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">CPU 경고 (%)</label>
+                            <input type="number" class="form-input" id="settings-cpu-warning" value="70" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">CPU 위험 (%)</label>
+                            <input type="number" class="form-input" id="settings-cpu-danger" value="90" min="0" max="100">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">메모리 경고 (%)</label>
+                            <input type="number" class="form-input" id="settings-mem-warning" value="70" min="0" max="100">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">메모리 위험 (%)</label>
+                            <input type="number" class="form-input" id="settings-mem-danger" value="90" min="0" max="100">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerts Tab -->
+                <div class="tab-content" id="tab-alerts">
+                    <div class="form-group">
+                        <label class="form-label">알림 규칙</label>
+                        <div class="alert-rules-list" id="alert-rules-list">
+                            <div class="no-data">알림 규칙이 없습니다</div>
+                        </div>
+                        <button class="add-rule-btn" onclick="showAddRuleForm()">+ 새 규칙 추가</button>
+                        <div class="alert-rule-form" id="alert-rule-form" style="display: none;">
+                            <div class="form-group">
+                                <label class="form-label">유형</label>
+                                <select class="form-input" id="rule-type">
+                                    <option value="STOCK_PRICE">주식 - 가격</option>
+                                    <option value="STOCK_CHANGE">주식 - 변화율</option>
+                                    <option value="CPU">시스템 - CPU</option>
+                                    <option value="MEMORY">시스템 - 메모리</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">조건</label>
+                                <input type="text" class="form-input" id="rule-condition" placeholder="NVDA, CPU 등">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">연산자</label>
+                                <select class="form-input" id="rule-operator">
+                                    <option value="GREATER_THAN">이상 (>=)</option>
+                                    <option value="LESS_THAN">이하 (<=)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">값</label>
+                                <input type="number" class="form-input" id="rule-threshold" placeholder="150">
+                            </div>
+                            <div class="alert-rule-form-actions">
+                                <button class="btn btn-secondary" onclick="cancelRuleForm()">취소</button>
+                                <button class="btn btn-primary" onclick="saveAlertRule()">저장</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -811,522 +508,7 @@
         </div>
     </div>
 
-    <script>
-        // State
-        let config = null;
-        let eventSource = null;
-        let reconnectAttempts = 0;
-        const MAX_RECONNECT_ATTEMPTS = 10;
-
-        // News pagination state
-        let yahooNewsData = [];
-        let yonhapNewsData = [];
-        let yahooPage = 0;
-        let yonhapPage = 0;
-        const NEWS_PER_PAGE = 5;
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            updateTime();
-            setInterval(updateTime, 1000);
-            loadConfig();
-        });
-
-        // Time display (local time)
-        function updateTime() {
-            const now = new Date();
-            const formatted = formatLocalDateTime(now);
-            document.getElementById('current-time').textContent = formatted;
-        }
-
-        // Format local date time
-        function formatLocalDateTime(date) {
-            if (!date) return '';
-            if (typeof date === 'string') {
-                date = new Date(date);
-            }
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            const seconds = String(date.getSeconds()).padStart(2, '0');
-            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-        }
-
-        // Format for section time display
-        function formatSectionTime(timestamp) {
-            if (!timestamp) return '';
-            const date = new Date(timestamp);
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            const seconds = String(date.getSeconds()).padStart(2, '0');
-            return `${month}.${day} ${hours}:${minutes}:${seconds} 기준`;
-        }
-
-        // Load config and start SSE
-        async function loadConfig() {
-            try {
-                const response = await fetch('/api/dashboard/config');
-                config = await response.json();
-                updateYouTubePlayer(config.youtubeUrl);
-                connectSSE();
-            } catch (error) {
-                console.error('Failed to load config:', error);
-                // Use default config
-                config = {
-                    youtubeUrl: 'https://www.youtube.com/watch?v=jfKfPfyJRdk',
-                    tickers: [
-                        { symbol: 'SPY', name: 'S&P500' },
-                        { symbol: 'QLD', name: 'NAS2X' },
-                        { symbol: 'NVDA', name: 'NVIDIA' }
-                    ]
-                };
-                updateYouTubePlayer(config.youtubeUrl);
-                connectSSE();
-            }
-        }
-
-        // YouTube player
-        function updateYouTubePlayer(url) {
-            const videoId = extractYouTubeId(url);
-            const player = document.getElementById('youtube-player');
-            if (videoId) {
-                player.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=0`;
-            }
-        }
-
-        function extractYouTubeId(url) {
-            if (!url) return null;
-            const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/);
-            return match ? match[1] : null;
-        }
-
-        // SSE Connection
-        function connectSSE() {
-            if (eventSource) {
-                eventSource.close();
-            }
-
-            updateConnectionStatus('connecting');
-            eventSource = new EventSource('/api/dashboard/stream');
-
-            eventSource.onopen = () => {
-                console.log('SSE Connected');
-                reconnectAttempts = 0;
-                updateConnectionStatus('connected');
-            };
-
-            eventSource.addEventListener('dashboard', (event) => {
-                const data = JSON.parse(event.data);
-                handleDashboardData(data);
-            });
-
-            eventSource.addEventListener('system', (event) => {
-                const data = JSON.parse(event.data);
-                if (data.system) {
-                    renderSystem(data.system, data.timestamp);
-                }
-            });
-
-            eventSource.onerror = (error) => {
-                console.error('SSE Error:', error);
-                updateConnectionStatus('disconnected');
-                eventSource.close();
-
-                if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                    reconnectAttempts++;
-                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
-                    console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts})`);
-                    setTimeout(connectSSE, delay);
-                }
-            };
-        }
-
-        function updateConnectionStatus(status) {
-            const dot = document.getElementById('status-dot');
-            const text = document.getElementById('status-text');
-
-            dot.className = 'status-dot';
-            
-            switch (status) {
-                case 'connected':
-                    dot.classList.add('connected');
-                    text.textContent = '연결됨';
-                    break;
-                case 'disconnected':
-                    dot.classList.add('disconnected');
-                    text.textContent = '연결 끊김';
-                    break;
-                default:
-                    text.textContent = '연결 중...';
-            }
-        }
-
-        // Handle incoming data
-        function handleDashboardData(data) {
-            if (data.stocks) {
-                renderStocks(data.stocks);
-            }
-            if (data.weather) {
-                renderWeather(data.weather, data.timestamp);
-            }
-            if (data.news) {
-                renderNews(data.news);
-            }
-            if (data.system) {
-                renderSystem(data.system, data.timestamp);
-            }
-        }
-
-        // Render Stocks
-        function renderStocks(stocksData) {
-            const container = document.getElementById('stocks-container');
-            const timeEl = document.getElementById('stocks-time');
-
-            if (!stocksData.quotes || stocksData.quotes.length === 0) {
-                container.innerHTML = '<div class="no-data">데이터 없음</div>';
-                return;
-            }
-
-            const html = stocksData.quotes.map(stock => {
-                const price = stock.currentPrice != null ? stock.currentPrice.toFixed(2) : 'N/A';
-                const change = stock.change != null ? stock.change.toFixed(2) : '0.00';
-                const percent = stock.percentChange != null ? stock.percentChange.toFixed(2) : '0.00';
-                const isPositive = stock.change >= 0;
-                const sign = isPositive ? '+' : '';
-                const changeClass = isPositive ? 'positive' : 'negative';
-
-                return `
-                    <div class="stock-item">
-                        <div class="stock-left">
-                            <span class="stock-symbol">${stock.symbol}</span>
-                            <span class="stock-name">${stock.name || ''}</span>
-                        </div>
-                        <div class="stock-right">
-                            <span class="stock-price">$ ${price}</span>
-                            <span class="stock-change ${changeClass}">${sign}${change} (${sign}${percent}%)</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = html;
-            timeEl.textContent = formatSectionTime(stocksData.fetchedAt);
-        }
-
-        // Render Weather
-        function renderWeather(weatherData, timestamp) {
-            const container = document.getElementById('weather-container');
-            const timeEl = document.getElementById('weather-time');
-
-            if (!weatherData || weatherData.length === 0) {
-                container.innerHTML = '<div class="no-data">데이터 없음</div>';
-                return;
-            }
-
-            const weatherIcons = {
-                'Clear': '☀',
-                'Clouds': '☁',
-                'Rain': '🌧',
-                'Drizzle': '🌦',
-                'Thunderstorm': '⛈',
-                'Snow': '❄',
-                'Mist': '🌫',
-                'Fog': '🌫',
-                'Haze': '🌫'
-            };
-
-            const html = weatherData.map(w => {
-                const icon = weatherIcons[w.weather] || '☁';
-                const temp = w.temperatureCelsius.toFixed(1);
-
-                return `
-                    <div class="weather-item">
-                        <div class="weather-city">
-                            <span class="weather-icon">${icon}</span>
-                            <span class="weather-city-name">${w.cityKo || w.city}</span>
-                        </div>
-                        <div class="weather-info">
-                            <span class="weather-temp">${temp}C</span>
-                            <span class="weather-humidity">${w.humidity}%</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = html;
-            if (timestamp) {
-                timeEl.textContent = formatSectionTime(timestamp);
-            }
-        }
-
-        // Render News with pagination
-        function renderNews(newsData) {
-            const container = document.getElementById('news-container');
-            const timeEl = document.getElementById('news-time');
-
-            // Store data for pagination
-            yahooNewsData = newsData.yahooNews || [];
-            yonhapNewsData = newsData.yonhapNews || [];
-            yahooPage = 0;
-            yonhapPage = 0;
-
-            renderNewsContent();
-            
-            if (newsData.fetchedAt) {
-                timeEl.textContent = formatSectionTime(newsData.fetchedAt);
-            }
-        }
-
-        function renderNewsContent() {
-            const container = document.getElementById('news-container');
-            let html = '';
-
-            // Yahoo News
-            html += '<div class="news-section-title">📈 YAHOO FINANCE</div>';
-            if (yahooNewsData.length > 0) {
-                const yahooStart = yahooPage * NEWS_PER_PAGE;
-                const yahooEnd = Math.min(yahooStart + NEWS_PER_PAGE, yahooNewsData.length);
-                const yahooSlice = yahooNewsData.slice(yahooStart, yahooEnd);
-                
-                html += yahooSlice.map(news => `
-                    <div class="news-item" onclick="window.open('${news.link}', '_blank')">
-                        <div class="news-title">${escapeHtml(news.title)}</div>
-                    </div>
-                `).join('');
-
-                const yahooTotalPages = Math.ceil(yahooNewsData.length / NEWS_PER_PAGE);
-                if (yahooTotalPages > 1) {
-                    html += `
-                        <div class="news-pagination">
-                            <button onclick="changeYahooPage(-1)" ${yahooPage === 0 ? 'disabled' : ''}>◀</button>
-                            <span class="page-info">${yahooPage + 1} / ${yahooTotalPages}</span>
-                            <button onclick="changeYahooPage(1)" ${yahooPage >= yahooTotalPages - 1 ? 'disabled' : ''}>▶</button>
-                        </div>
-                    `;
-                }
-            } else {
-                html += '<div class="no-data">No news</div>';
-            }
-
-            // Yonhap News
-            html += '<div class="news-section-title">📰 연합뉴스</div>';
-            if (yonhapNewsData.length > 0) {
-                const yonhapStart = yonhapPage * NEWS_PER_PAGE;
-                const yonhapEnd = Math.min(yonhapStart + NEWS_PER_PAGE, yonhapNewsData.length);
-                const yonhapSlice = yonhapNewsData.slice(yonhapStart, yonhapEnd);
-                
-                html += yonhapSlice.map(news => `
-                    <div class="news-item" onclick="window.open('${news.link}', '_blank')">
-                        <div class="news-title">${escapeHtml(news.title)}</div>
-                    </div>
-                `).join('');
-
-                const yonhapTotalPages = Math.ceil(yonhapNewsData.length / NEWS_PER_PAGE);
-                if (yonhapTotalPages > 1) {
-                    html += `
-                        <div class="news-pagination">
-                            <button onclick="changeYonhapPage(-1)" ${yonhapPage === 0 ? 'disabled' : ''}>◀</button>
-                            <span class="page-info">${yonhapPage + 1} / ${yonhapTotalPages}</span>
-                            <button onclick="changeYonhapPage(1)" ${yonhapPage >= yonhapTotalPages - 1 ? 'disabled' : ''}>▶</button>
-                        </div>
-                    `;
-                }
-            } else {
-                html += '<div class="no-data">뉴스 없음</div>';
-            }
-
-            container.innerHTML = html;
-        }
-
-        function changeYahooPage(delta) {
-            const totalPages = Math.ceil(yahooNewsData.length / NEWS_PER_PAGE);
-            yahooPage = Math.max(0, Math.min(yahooPage + delta, totalPages - 1));
-            renderNewsContent();
-        }
-
-        function changeYonhapPage(delta) {
-            const totalPages = Math.ceil(yonhapNewsData.length / NEWS_PER_PAGE);
-            yonhapPage = Math.max(0, Math.min(yonhapPage + delta, totalPages - 1));
-            renderNewsContent();
-        }
-
-        // Render System
-        function renderSystem(systemData, timestamp) {
-            const container = document.getElementById('system-container');
-            const timeEl = document.getElementById('system-time');
-
-            const cpuPercent = systemData.cpuUsage >= 0 ? systemData.cpuUsage.toFixed(1) : 'N/A';
-            const memPercent = systemData.memoryUsagePercent.toFixed(1);
-            const heapPercent = systemData.heapUsagePercent.toFixed(1);
-            const uptime = formatUptime(systemData.uptimeMillis);
-
-            const getCpuBarClass = (val) => val > 80 ? 'danger' : val > 50 ? 'warning' : '';
-            const getMemBarClass = (val) => val > 90 ? 'danger' : val > 70 ? 'warning' : '';
-
-            const html = `
-                <div class="system-bar">
-                    <span class="bar-label">CPU</span>
-                    <div class="bar-container">
-                        <div class="bar-fill ${getCpuBarClass(systemData.cpuUsage)}" style="width: ${Math.min(systemData.cpuUsage, 100)}%"></div>
-                    </div>
-                    <span class="bar-value">${cpuPercent}%</span>
-                </div>
-                <div class="system-bar">
-                    <span class="bar-label">MEM</span>
-                    <div class="bar-container">
-                        <div class="bar-fill ${getMemBarClass(systemData.memoryUsagePercent)}" style="width: ${memPercent}%"></div>
-                    </div>
-                    <span class="bar-value">${formatBytes(systemData.memoryUsed)}/${formatBytes(systemData.memoryTotal)}</span>
-                </div>
-                <div class="system-bar">
-                    <span class="bar-label">HEAP</span>
-                    <div class="bar-container">
-                        <div class="bar-fill ${getMemBarClass(systemData.heapUsagePercent)}" style="width: ${heapPercent}%"></div>
-                    </div>
-                    <span class="bar-value">${formatBytes(systemData.heapUsed)}/${formatBytes(systemData.heapMax)}</span>
-                </div>
-                <div class="system-item">
-                    <span class="system-label">THR</span>
-                    <span class="system-value">${systemData.threadCount}</span>
-                </div>
-                <div class="system-item">
-                    <span class="system-label">GC</span>
-                    <span class="system-value">${systemData.gcCount}/${systemData.gcTime}ms</span>
-                </div>
-                <div class="system-item">
-                    <span class="system-label">UP</span>
-                    <span class="system-value">${uptime}</span>
-                </div>
-            `;
-
-            container.innerHTML = html;
-            if (timestamp) {
-                timeEl.textContent = formatSectionTime(timestamp);
-            } else {
-                timeEl.textContent = formatSectionTime(new Date());
-            }
-        }
-
-        // Settings Modal
-        function openSettings() {
-            const modal = document.getElementById('settings-modal');
-            const urlInput = document.getElementById('youtube-url');
-            const tickerList = document.getElementById('ticker-list');
-
-            urlInput.value = config?.youtubeUrl || '';
-
-            tickerList.innerHTML = '';
-            (config?.tickers || []).forEach((ticker, index) => {
-                addTickerRow(ticker.symbol, ticker.name);
-            });
-
-            modal.classList.add('active');
-        }
-
-        function closeSettings() {
-            document.getElementById('settings-modal').classList.remove('active');
-        }
-
-        function addTicker() {
-            addTickerRow('', '');
-        }
-
-        function addTickerRow(symbol = '', name = '') {
-            const tickerList = document.getElementById('ticker-list');
-            const row = document.createElement('div');
-            row.className = 'ticker-item';
-            row.innerHTML = `
-                <input type="text" class="form-input ticker-symbol" placeholder="AAPL" value="${escapeHtml(symbol)}">
-                <input type="text" class="form-input ticker-name" placeholder="Apple Inc." value="${escapeHtml(name)}">
-                <button class="ticker-remove" onclick="this.parentElement.remove()">×</button>
-            `;
-            tickerList.appendChild(row);
-        }
-
-        async function saveSettings() {
-            const youtubeUrl = document.getElementById('youtube-url').value;
-            const tickerRows = document.querySelectorAll('.ticker-item');
-            const tickers = [];
-
-            tickerRows.forEach(row => {
-                const symbol = row.querySelector('.ticker-symbol').value.trim().toUpperCase();
-                const name = row.querySelector('.ticker-name').value.trim();
-                if (symbol) {
-                    tickers.push({ symbol, name });
-                }
-            });
-
-            const newConfig = { youtubeUrl, tickers };
-
-            try {
-                const response = await fetch('/api/dashboard/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newConfig)
-                });
-
-                if (response.ok) {
-                    config = await response.json();
-                    updateYouTubePlayer(config.youtubeUrl);
-                    closeSettings();
-                } else {
-                    alert('설정 저장 실패');
-                }
-            } catch (error) {
-                console.error('Failed to save settings:', error);
-                alert('설정 저장 실패: ' + error.message);
-            }
-        }
-
-        // Utilities
-        function formatBytes(bytes) {
-            if (bytes === 0) return '0B';
-            const k = 1024;
-            const sizes = ['B', 'K', 'M', 'G', 'T'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(0)) + sizes[i];
-        }
-
-        function formatUptime(millis) {
-            const seconds = Math.floor(millis / 1000);
-            const hours = Math.floor(seconds / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            const secs = seconds % 60;
-            return `${hours}h${minutes}m${secs}s`;
-        }
-
-        function formatRefreshTime(timestamp) {
-            if (!timestamp) return 'N/A';
-            const date = new Date(timestamp);
-            const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-            if (seconds < 60) return `${seconds}s`;
-            return `${Math.floor(seconds / 60)}m${seconds % 60}s`;
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Close modal on outside click
-        document.getElementById('settings-modal').addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal-overlay')) {
-                closeSettings();
-            }
-        });
-
-        // Keyboard shortcut
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                closeSettings();
-            }
-        });
-    </script>
+    <!-- JavaScript Module -->
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>

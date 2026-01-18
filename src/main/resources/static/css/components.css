@@ -1,0 +1,183 @@
+/* Components - Buttons, Inputs, Progress Bars */
+
+/* Settings Button */
+.settings-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11px;
+    transition: all 0.2s;
+}
+
+.settings-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+/* Control Buttons */
+.control-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 3px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 9px;
+    transition: all 0.2s;
+}
+
+.control-btn:hover {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+}
+
+.control-btn.active {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+    background: rgba(59, 130, 246, 0.1);
+}
+
+/* Generic Buttons */
+.btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+}
+
+.btn-primary {
+    background: var(--accent-cyan);
+    border: 1px solid var(--accent-cyan);
+    color: var(--bg-primary);
+}
+
+.btn-primary:hover {
+    background: transparent;
+    color: var(--accent-cyan);
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    color: var(--text-secondary);
+    font-size: 11px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+}
+
+.form-input::placeholder {
+    color: var(--text-muted);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.form-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.form-checkbox input {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-cyan);
+}
+
+.form-checkbox span {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+
+/* Flip Animation */
+.flip-char {
+    display: inline-block;
+    transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+.flip-char.flipping {
+    animation: digitFlip 0.3s ease-out;
+}
+
+@keyframes digitFlip {
+    0% {
+        transform: translateY(0) rotateX(0);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-30%) rotateX(-90deg);
+        opacity: 0.5;
+    }
+    100% {
+        transform: translateY(0) rotateX(0);
+        opacity: 1;
+    }
+}
+
+/* Progress Bar */
+.bar-container {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+
+.bar-fill {
+    height: 100%;
+    background: var(--accent-green);
+    transition: width 0.3s ease;
+}
+
+.bar-fill.warning {
+    background: var(--accent-yellow);
+}
+
+.bar-fill.danger {
+    background: var(--accent-red);
+}
