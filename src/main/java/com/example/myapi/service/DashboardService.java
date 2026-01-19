@@ -135,6 +135,10 @@ public class DashboardService {
         DashboardConfig config = getConfig(userId);
         List<StockQuote> quotes = new ArrayList<>();
 
+        log.debug("Getting stocks data for user {} with {} tickers: {}", 
+                userId, config.tickers().size(), 
+                config.tickers().stream().map(TickerConfig::symbol).collect(java.util.stream.Collectors.joining(", ")));
+
         for (TickerConfig ticker : config.tickers()) {
             try {
                 FinnhubQuoteResponse response = finnhubService.getQuote(ticker.symbol());
@@ -145,6 +149,7 @@ public class DashboardService {
             }
         }
 
+        log.debug("Retrieved {} stock quotes for user {}", quotes.size(), userId);
         return new StocksData(quotes, Instant.now());
     }
 

@@ -81,7 +81,8 @@ export function connectSSE() {
     }
 
     updateConnectionStatus('connecting');
-    const newEventSource = new EventSource('/api/dashboard/stream');
+    // EventSource는 헤더를 설정할 수 없으므로 쿼리 파라미터로 userId 전달
+    const newEventSource = new EventSource(`/api/dashboard/stream?userId=${encodeURIComponent(userId)}`);
     setEventSource(newEventSource);
 
     newEventSource.onopen = () => {
@@ -91,6 +92,10 @@ export function connectSSE() {
 
     newEventSource.addEventListener('dashboard', (event) => {
         const data = JSON.parse(event.data);
+        console.log('[SSE] Received dashboard data:', data);
+        if (data.stocks && data.stocks.quotes) {
+            console.log('[SSE] Stocks quotes received:', data.stocks.quotes.length, 'items');
+        }
         handleDashboardData(data);
     });
 

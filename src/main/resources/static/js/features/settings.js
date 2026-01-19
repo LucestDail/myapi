@@ -185,6 +185,7 @@ export function addTicker() {
     if (!config) return;
     if (!config.tickers) config.tickers = [];
     config.tickers.push({ symbol: '', name: '' });
+    console.log('[Settings] Ticker added, total:', config.tickers.length);
     renderTickerList();
 }
 
@@ -194,6 +195,7 @@ export function addTicker() {
 export function updateTicker(index, field, value) {
     if (!config || !config.tickers) return;
     config.tickers[index][field] = value;
+    console.log('[Settings] Ticker updated:', config.tickers[index]);
 }
 
 /**
@@ -244,6 +246,8 @@ export async function saveSettings() {
         // 현재 설정된 티커 목록 가져오기 (빈 심볼 제외)
         const validTickers = (config?.tickers || []).filter(t => t.symbol && t.symbol.trim() !== '');
         
+        console.log('[Settings] Saving config with tickers:', validTickers);
+        
         const response = await fetch('/api/dashboard/config', {
             method: 'POST',
             headers: {
@@ -258,6 +262,7 @@ export async function saveSettings() {
 
         if (response.ok) {
             const savedConfig = await response.json();
+            console.log('[Settings] Config saved, server returned:', savedConfig);
             showToast('설정이 저장되었습니다', 'info');
             
             // 서버에서 반환된 설정으로 config 업데이트
@@ -268,8 +273,12 @@ export async function saveSettings() {
                 updateYouTubePlayer(savedConfig.youtubeUrl);
             }
             
-            // SSE 연결 재설정하여 새 설정으로 데이터 받기
-            connectSSE();
+            // 기존 SSE 연결 종료 후 재연결하여 새 설정으로 데이터 받기
+            // 약간의 지연을 두어 서버의 broadcastFullDataForUser가 완료되도록 함
+            setTimeout(() => {
+                console.log('[Settings] Reconnecting SSE with new config');
+                connectSSE();
+            }, 100);
             
             startStockHighlight();
             

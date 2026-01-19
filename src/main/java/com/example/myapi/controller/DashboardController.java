@@ -52,8 +52,10 @@ public class DashboardController {
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter stream(
             @RequestAttribute(value = "userId", required = false) String userId,
-            @RequestHeader(value = "X-User-Id", required = false) String headerUserId) {
-        String effectiveUserId = userId != null ? userId : headerUserId;
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @RequestParam(value = "userId", required = false) String paramUserId) {
+        // 우선순위: RequestAttribute > RequestHeader > RequestParam
+        String effectiveUserId = userId != null ? userId : (headerUserId != null ? headerUserId : paramUserId);
         if (effectiveUserId == null) {
             throw new IllegalArgumentException("User ID is required");
         }
