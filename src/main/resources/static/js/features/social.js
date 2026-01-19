@@ -234,8 +234,9 @@ export function renderEmergency() {
         return { totalPages, currentPage, hasNext: currentPage < totalPages, hasPrev: currentPage > 1 };
     }
 
-    // 제한 없이 모든 항목 표시
-    const pagination = getPaginationInfo(items, items.length);
+    // 페이지네이션을 위해 페이지당 표시 개수 설정 (모든 항목 표시하되 자동슬라이드 지원)
+    const emergencyPerPage = 20; // 한 번에 표시할 최대 항목 수
+    const pagination = getPaginationInfo(items, emergencyPerPage);
     let html = '<div class="news-section-title">';
     html += '<span>실시간 긴급재난문자</span>';
     if (uiState.emergency && uiState.emergency.autoSlide) {
@@ -540,7 +541,7 @@ export function changeEmergencyPage(delta) {
         const dateB = b.createDate || b.registerDate || '';
         return dateB.localeCompare(dateA);
     });
-    const emergencyPerPage = 20; // 페이지당 항목 수
+    const emergencyPerPage = 20; // 페이지당 항목 수 (renderEmergency와 동일한 값)
     const totalPages = Math.ceil(items.length / emergencyPerPage);
     const newPage = emergencyPageIndex + delta;
     if (newPage >= 0 && newPage < totalPages) {

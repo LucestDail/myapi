@@ -23,7 +23,7 @@ import {
 } from './features/lifeinfo.js';
 import { 
     renderNews, toggleNewsAutoSlide, startNewsAutoSlide, 
-    stopNewsAutoSlide, changeNewsPage, initNewsAutoSlide
+    stopNewsAutoSlide, changeNewsPage, changeYonhapNewsPage, initNewsAutoSlide
 } from './features/news.js';
 import { 
     loadTodos, setTodoFilter, addTodo, handleTodoKeypress,
