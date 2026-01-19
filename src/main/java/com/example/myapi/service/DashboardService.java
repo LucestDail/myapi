@@ -52,7 +52,9 @@ public class DashboardService {
      */
     public DashboardConfig getConfig(String userId) {
         UserSettingsDto settings = userSettingsService.getSettings(userId);
-        return convertToDashboardConfig(settings);
+        DashboardConfig config = convertToDashboardConfig(settings);
+        log.debug("Retrieved config for user {}: {} tickers", userId, config.tickers().size());
+        return config;
     }
 
     /**
@@ -60,11 +62,26 @@ public class DashboardService {
      */
     public DashboardConfig updateConfig(String userId, DashboardConfig config) {
         UserSettingsDto currentSettings = userSettingsService.getSettings(userId);
+        log.debug("Current settings for user {}: {} tickers", userId, 
+                currentSettings.stocks().tickers().size());
+        
         UserSettingsDto updatedSettings = mergeDashboardConfig(currentSettings, config);
+        log.debug("Merged settings for user {}: {} tickers", userId, 
+                updatedSettings.stocks().tickers().size());
+        
         userSettingsService.saveSettings(userId, updatedSettings);
         log.info("Dashboard config updated for user {}: {} tickers, youtube: {}", 
                 userId, config.tickers().size(), config.youtubeUrl());
-        return config;
+        
+        // 저장 후 다시 조회하여 실제 저장된 값 반환
+        UserSettingsDto savedSettings = userSettingsService.getSettings(userId);
+        DashboardConfig savedConfig = convertToDashboardConfig(savedSettings);
+        log.debug("Retrieved saved config for user {}: {} tickers: {}", 
+                userId, savedConfig.tickers().size(),
+                savedConfig.tickers().stream()
+                        .map(t -> t.symbol())
+                        .collect(java.util.stream.Collectors.joining(", ")));
+        return savedConfig;
     }
 
     /**

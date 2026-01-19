@@ -56,9 +56,11 @@ public class UserSettingsService {
                 .orElse(new UserSettings(userId, json));
         
         entity.setSettingsJson(json);
-        settingsRepository.save(entity);
+        // 즉시 DB에 반영되도록 flush
+        settingsRepository.saveAndFlush(entity);
         
-        log.info("Settings saved for user: {}", userId);
+        log.info("Settings saved for user: {} with {} tickers", userId, 
+                settings.stocks().tickers().size());
         return settings;
     }
 
