@@ -39,13 +39,20 @@ export function renderNews() {
         return { totalPages, currentPage, hasNext: currentPage < totalPages, hasPrev: currentPage > 1 };
     }
 
+    // Sort Yahoo News by date (descending - most recent first)
+    const sortedYahooNews = [...yahooNewsData].sort((a, b) => {
+        const dateA = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+        const dateB = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+        return dateB - dateA; // Descending order
+    });
+
     // Yahoo News
-    const yahooPagination = getPaginationInfo(yahooNewsData, NEWS_PER_PAGE);
+    const yahooPagination = getPaginationInfo(sortedYahooNews, NEWS_PER_PAGE);
     html += `<div class="news-section-title">
         <span>YAHOO FINANCE</span>
         ${uiState.news.autoSlide 
             ? '<span class="news-auto-slide">▶ 자동</span>' 
-            : yahooNewsData.length > NEWS_PER_PAGE 
+            : sortedYahooNews.length > NEWS_PER_PAGE 
                 ? `<span class="news-pagination">
                     <button class="page-btn" onclick="changeNewsPage(-1)" ${!yahooPagination.hasPrev ? 'disabled' : ''}>◀</button>
                     <span class="page-info">${yahooPagination.currentPage}/${yahooPagination.totalPages}</span>
@@ -54,7 +61,7 @@ export function renderNews() {
                 : ''}
     </div>`;
 
-    const displayedYahooNews = getNewsForDisplay(yahooNewsData, NEWS_PER_PAGE);
+    const displayedYahooNews = getNewsForDisplay(sortedYahooNews, NEWS_PER_PAGE);
     displayedYahooNews.forEach((news, idx) => {
         const isHighlight = uiState.news.autoSlide && idx === 0;
         html += `
@@ -67,12 +74,34 @@ export function renderNews() {
         `;
     });
 
+    // Sort Yonhap News by date (descending - most recent first)
+    const sortedYonhapNews = [...yonhapNewsData].sort((a, b) => {
+        const dateA = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+        const dateB = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+        return dateB - dateA; // Descending order
+    });
+
     // Yonhap News
-    if (yonhapNewsData.length > 0) {
-        html += '<div class="news-section-title"><span>연합뉴스</span></div>';
-        yonhapNewsData.slice(0, 3).forEach(news => {
+    if (sortedYonhapNews.length > 0) {
+        const yonhapPagination = getPaginationInfo(sortedYonhapNews, NEWS_PER_PAGE);
+        html += `<div class="news-section-title">
+            <span>연합뉴스</span>
+            ${uiState.news.autoSlide 
+                ? '<span class="news-auto-slide">▶ 자동</span>' 
+                : sortedYonhapNews.length > NEWS_PER_PAGE 
+                    ? `<span class="news-pagination">
+                        <button class="page-btn" onclick="changeYonhapNewsPage(-1)" ${!yonhapPagination.hasPrev ? 'disabled' : ''}>◀</button>
+                        <span class="page-info">${yonhapPagination.currentPage}/${yonhapPagination.totalPages}</span>
+                        <button class="page-btn" onclick="changeYonhapNewsPage(1)" ${!yonhapPagination.hasNext ? 'disabled' : ''}>▶</button>
+                      </span>` 
+                    : ''}
+        </div>`;
+
+        const displayedYonhapNews = getNewsForDisplay(sortedYonhapNews, NEWS_PER_PAGE);
+        displayedYonhapNews.forEach((news, idx) => {
+            const isHighlight = uiState.news.autoSlide && idx === 0;
             html += `
-                <div class="news-item" onclick="window.open('${news.link}', '_blank')">
+                <div class="news-item ${isHighlight ? 'news-highlight' : ''}" onclick="window.open('${news.link}', '_blank')">
                     <div class="news-title">${news.title}</div>
                     <div class="news-meta">
                         <span>${news.pubDate || ''}</span>
@@ -139,10 +168,22 @@ export function stopNewsAutoSlide() {
 }
 
 /**
- * Change news page
+ * Change news page (Yahoo)
  */
 export function changeNewsPage(delta) {
     const totalPages = Math.ceil(yahooNewsData.length / NEWS_PER_PAGE);
+    const newPage = newsPageIndex + delta;
+    if (newPage >= 0 && newPage < totalPages) {
+        setNewsPageIndex(newPage);
+        renderNews();
+    }
+}
+
+/**
+ * Change Yonhap news page
+ */
+export function changeYonhapNewsPage(delta) {
+    const totalPages = Math.ceil(yonhapNewsData.length / NEWS_PER_PAGE);
     const newPage = newsPageIndex + delta;
     if (newPage >= 0 && newPage < totalPages) {
         setNewsPageIndex(newPage);

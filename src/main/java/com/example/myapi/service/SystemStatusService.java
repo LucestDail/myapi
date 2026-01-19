@@ -17,7 +17,6 @@ import java.util.Map;
 @Service
 public class SystemStatusService {
 
-    private final Runtime runtime = Runtime.getRuntime();
     private final MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
     private final ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
     private final RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();

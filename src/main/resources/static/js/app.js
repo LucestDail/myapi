@@ -127,6 +127,7 @@ window.loadQuote = loadQuote;
 // News Functions
 window.toggleNewsAutoSlide = toggleNewsAutoSlide;
 window.changeNewsPage = changeNewsPage;
+window.changeYonhapNewsPage = changeYonhapNewsPage;
 
 // Social News Functions
 window.toggleSocialNewsAutoSlide = toggleSocialNewsAutoSlide;
@@ -184,5 +185,18 @@ window.deleteAlertRule = deleteAlertRule;
 window.showAddRuleForm = showAddRuleForm;
 window.cancelRuleForm = cancelRuleForm;
 window.saveAlertRule = saveAlertRule;
+
+// Utility Functions
+window.copyToClipboard = function(elementId) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        const text = element.textContent;
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('클립보드에 복사되었습니다', 'info');
+        }).catch(() => {
+            showToast('복사 실패', 'warning');
+        });
+    }
+};
 
 console.log('Dashboard Application Initialized');

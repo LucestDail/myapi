@@ -234,12 +234,13 @@ export function renderEmergency() {
         return { totalPages, currentPage, hasNext: currentPage < totalPages, hasPrev: currentPage > 1 };
     }
 
-    const pagination = getPaginationInfo(items, EMERGENCY_PER_PAGE);
+    // 제한 없이 모든 항목 표시
+    const pagination = getPaginationInfo(items, items.length);
     let html = '<div class="news-section-title">';
     html += '<span>실시간 긴급재난문자</span>';
     if (uiState.emergency && uiState.emergency.autoSlide) {
         html += '<span class="news-auto-slide">▶ 자동</span>';
-    } else if (items.length > EMERGENCY_PER_PAGE) {
+    } else if (items.length > emergencyPerPage) {
         html += `<span class="news-pagination">
             <button class="page-btn" onclick="changeEmergencyPage(-1)" ${!pagination.hasPrev ? 'disabled' : ''}>◀</button>
             <span class="page-info">${pagination.currentPage}/${pagination.totalPages}</span>
@@ -250,7 +251,8 @@ export function renderEmergency() {
 
     html += '<table class="emergency-table"><thead><tr><th>일시</th><th>지역</th><th>내용</th><th>분류</th><th>상세</th></tr></thead><tbody>';
     
-    const displayedItems = getEmergencyForDisplay(items, EMERGENCY_PER_PAGE);
+    // 모든 항목 표시 (자동슬라이드가 켜져있으면 슬라이드, 아니면 페이지네이션)
+    const displayedItems = getEmergencyForDisplay(items, emergencyPerPage);
     displayedItems.forEach(item => {
         // createDate 또는 registerDate 형식: "20260118181908" -> "2026-01-18 18:19:08"
         let formattedDate = '';
@@ -538,7 +540,8 @@ export function changeEmergencyPage(delta) {
         const dateB = b.createDate || b.registerDate || '';
         return dateB.localeCompare(dateA);
     });
-    const totalPages = Math.ceil(items.length / EMERGENCY_PER_PAGE);
+    const emergencyPerPage = 20; // 페이지당 항목 수
+    const totalPages = Math.ceil(items.length / emergencyPerPage);
     const newPage = emergencyPageIndex + delta;
     if (newPage >= 0 && newPage < totalPages) {
         setEmergencyPageIndex(newPage);

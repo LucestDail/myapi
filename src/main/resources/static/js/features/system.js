@@ -274,7 +274,8 @@ export function renderSystemChart() {
     }
 
     const points = systemHistoryData.length;
-    const xStep = chartWidth / Math.max(points - 1, 1);
+    // points가 0이거나 1이면 xStep이 제대로 계산되지 않을 수 있음
+    const xStep = points > 1 ? chartWidth / (points - 1) : chartWidth;
 
     const drawLine = (data, key, color) => {
         ctx.strokeStyle = color;

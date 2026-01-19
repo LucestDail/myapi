@@ -12,6 +12,63 @@ import {
 } from './social.js';
 
 /**
+ * Populate profile information
+ */
+async function populateProfileInfo() {
+    // User ID
+    const userIdEl = document.getElementById('profile-user-id');
+    if (userIdEl) {
+        userIdEl.textContent = userId;
+    }
+
+    // Location info
+    const locationEl = document.getElementById('profile-location');
+    if (locationEl) {
+        try {
+            const response = await fetch('/api/location/weather');
+            if (response.ok) {
+                const data = await response.json();
+                locationEl.textContent = data.location || '알 수 없음';
+            } else {
+                locationEl.textContent = '알 수 없음';
+            }
+        } catch (error) {
+            locationEl.textContent = '알 수 없음';
+        }
+    }
+
+    // Browser info
+    const browserEl = document.getElementById('profile-browser');
+    if (browserEl) {
+        const ua = navigator.userAgent;
+        let browser = '알 수 없음';
+        if (ua.includes('Chrome')) browser = 'Chrome';
+        else if (ua.includes('Firefox')) browser = 'Firefox';
+        else if (ua.includes('Safari')) browser = 'Safari';
+        else if (ua.includes('Edge')) browser = 'Edge';
+        browserEl.textContent = browser;
+    }
+
+    // Screen resolution
+    const resolutionEl = document.getElementById('profile-resolution');
+    if (resolutionEl) {
+        resolutionEl.textContent = `${window.screen.width} x ${window.screen.height}`;
+    }
+
+    // Language
+    const languageEl = document.getElementById('profile-language');
+    if (languageEl) {
+        languageEl.textContent = navigator.language || navigator.userLanguage || '알 수 없음';
+    }
+
+    // Timezone
+    const timezoneEl = document.getElementById('profile-timezone');
+    if (timezoneEl) {
+        timezoneEl.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone || '알 수 없음';
+    }
+}
+
+/**
  * Open settings modal
  */
 export function openSettings() {
@@ -96,6 +153,9 @@ function populateSettingsForm() {
     if (cpuDangerInput) cpuDangerInput.value = uiState.system.cpuDanger;
     if (memWarningInput) memWarningInput.value = uiState.system.memWarning;
     if (memDangerInput) memDangerInput.value = uiState.system.memDanger;
+
+    // Profile tab
+    populateProfileInfo();
 }
 
 /**
@@ -202,7 +262,12 @@ export async function saveSettings() {
             // Update config
             if (config) {
                 config.youtubeUrl = youtubeUrl;
+                config.tickers = config.tickers || [];
             }
+            
+            // Reload config from server to get updated tickers
+            await loadConfig();
+            
             startStockHighlight();
             
             // Update social news and traffic auto slide

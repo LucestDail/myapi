@@ -81,9 +81,8 @@ export function formatNewsDate(dateStr) {
             // 한국 시간대(UTC+9)로 Date 객체 생성
             // 서버에서 "2026-01-19 10:00:00" (KST)를 전송했다면,
             // 이것을 UTC로 변환하면 "2026-01-19 01:00:00" (UTC)가 됨
-            // Date.UTC로 UTC 시간을 만들고, 이것을 Date 객체로 생성
-            // 하지만 우리가 원하는 것은 한국 시간대 "2026-01-19 10:00:00"을 그대로 해석하는 것
-            // 따라서: 한국 시간대를 UTC로 변환한 값을 저장
+            // Date.UTC로 UTC 시간을 만들고, 한국 시간대 오프셋을 빼서
+            // 한국 시간대를 UTC로 변환한 값을 저장
             const kstOffset = 9 * 60 * 60 * 1000; // 한국 시간대는 UTC+9 (밀리초)
             const utcTime = Date.UTC(
                 parseInt(year), 
@@ -94,14 +93,6 @@ export function formatNewsDate(dateStr) {
                 parseInt(seconds || 0)
             );
             // 한국 시간대를 UTC로 변환: KST = UTC + 9시간이므로, UTC = KST - 9시간
-            // 따라서 UTC 시간에서 9시간을 빼면 한국 시간대가 UTC로 저장된 것처럼 보이지만,
-            // 실제로는 한국 시간대를 UTC로 변환한 값이 됨
-            // 하지만 이렇게 하면 Date 객체가 UTC로 저장되므로, 
-            // getTime()으로 비교할 때는 정확하지만, getHours() 등으로 조회할 때는 로컬 시간대로 변환됨
-            // 따라서 더 정확하게는: 한국 시간대를 UTC로 변환한 값을 저장
-            // 하지만 실제로는 서버에서 전송한 시간이 한국 시간대라고 가정하고,
-            // 클라이언트의 로컬 시간대와 무관하게 한국 시간대로 해석해야 함
-            // 따라서: 한국 시간대를 UTC로 변환한 값을 저장
             date = new Date(utcTime - kstOffset);
         } else if (dateStr.includes('T')) {
             // ISO 형식 (2026-01-19T02:57:00)

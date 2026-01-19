@@ -140,8 +140,7 @@ public class DashboardController {
         
         dashboardService.updateConfig(effectiveUserId, config);
         
-        // 설정 변경 시 해당 사용자에게 즉시 새 데이터 전송
-        // TODO: 사용자별 브로드캐스트로 변경 필요 (현재는 전체 브로드캐스트)
+        // 설정 변경 시 해당 사용자에게 즉시 새 데이터 전송 (사용자별 브로드캐스트)
         broadcastFullDataForUser(effectiveUserId);
         
         return ResponseEntity.ok(dashboardService.getConfig(effectiveUserId));

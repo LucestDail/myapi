@@ -47,9 +47,6 @@ public class FinnhubService {
      * 캐시된 Quote 엔트리
      */
     private record CachedQuote(FinnhubQuoteResponse response, Instant fetchedAt) {
-        boolean isExpired() {
-            return Instant.now().isAfter(fetchedAt.plus(CACHE_TTL));
-        }
     }
 
     /**

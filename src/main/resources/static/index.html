@@ -504,6 +504,7 @@
                 <button class="modal-tab" data-tab="news" onclick="switchTab('news')">뉴스</button>
                 <button class="modal-tab" data-tab="system" onclick="switchTab('system')">시스템</button>
                 <button class="modal-tab" data-tab="alerts" onclick="switchTab('alerts')">알림</button>
+                <button class="modal-tab" data-tab="profile" onclick="switchTab('profile')">개인정보</button>
             </div>
             <div class="modal-body">
                 <!-- Media Tab -->
@@ -634,6 +635,40 @@
                             <div class="alert-rule-form-actions">
                                 <button class="btn btn-secondary" onclick="cancelRuleForm()">취소</button>
                                 <button class="btn btn-primary" onclick="saveAlertRule()">저장</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Tab -->
+                <div class="tab-content" id="tab-profile">
+                    <div class="form-group">
+                        <label class="form-label">사용자 식별 정보</label>
+                        <div class="profile-info" id="profile-info">
+                            <div class="profile-item">
+                                <span class="profile-label">사용자 ID (UUID):</span>
+                                <span class="profile-value" id="profile-user-id">-</span>
+                                <button class="btn btn-secondary" onclick="copyToClipboard('profile-user-id')" style="margin-left: 8px; padding: 2px 8px; font-size: 10px;">복사</button>
+                            </div>
+                            <div class="profile-item">
+                                <span class="profile-label">위치 정보:</span>
+                                <span class="profile-value" id="profile-location">-</span>
+                            </div>
+                            <div class="profile-item">
+                                <span class="profile-label">브라우저:</span>
+                                <span class="profile-value" id="profile-browser">-</span>
+                            </div>
+                            <div class="profile-item">
+                                <span class="profile-label">화면 해상도:</span>
+                                <span class="profile-value" id="profile-resolution">-</span>
+                            </div>
+                            <div class="profile-item">
+                                <span class="profile-label">언어:</span>
+                                <span class="profile-value" id="profile-language">-</span>
+                            </div>
+                            <div class="profile-item">
+                                <span class="profile-label">시간대:</span>
+                                <span class="profile-value" id="profile-timezone">-</span>
                             </div>
                         </div>
                     </div>

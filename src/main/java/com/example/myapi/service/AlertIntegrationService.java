@@ -6,8 +6,6 @@ import com.example.myapi.dto.dashboard.DashboardData.SystemData;
 import com.example.myapi.dto.dashboard.DashboardData.WeatherData;
 import com.example.myapi.entity.AlertRule;
 import com.example.myapi.repository.AlertRuleRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -20,8 +18,6 @@ import java.util.Map;
  */
 @Service
 public class AlertIntegrationService {
-
-    private static final Logger log = LoggerFactory.getLogger(AlertIntegrationService.class);
 
     private final AlertRuleRepository alertRuleRepository;
     private final AlertService alertService;
