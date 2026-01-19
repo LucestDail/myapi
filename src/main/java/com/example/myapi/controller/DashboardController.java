@@ -54,8 +54,10 @@ public class DashboardController {
             @RequestAttribute(value = "userId", required = false) String userId,
             @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
             @RequestParam(value = "userId", required = false) String paramUserId) {
-        // 우선순위: RequestAttribute > RequestHeader > RequestParam
-        String effectiveUserId = userId != null ? userId : (headerUserId != null ? headerUserId : paramUserId);
+        // SSE 연결 시 쿼리 파라미터로 전달된 userId를 최우선으로 사용
+        // (UserIdentificationFilter가 새로운 userId를 생성하는 것을 방지)
+        // 우선순위: RequestParam > RequestHeader > RequestAttribute
+        String effectiveUserId = paramUserId != null ? paramUserId : (headerUserId != null ? headerUserId : userId);
         if (effectiveUserId == null) {
             throw new IllegalArgumentException("User ID is required");
         }
