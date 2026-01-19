@@ -127,8 +127,18 @@ export function connectSSE() {
  * Handle incoming dashboard data
  */
 function handleDashboardData(data) {
+    console.log('[SSE] handleDashboardData called with:', {
+        hasStocks: !!data.stocks,
+        stocksCount: data.stocks?.quotes?.length || 0,
+        hasWeather: !!data.weather,
+        hasNews: !!data.news,
+        hasSystem: !!data.system
+    });
+    
     if (data.stocks) {
+        console.log('[SSE] Processing stocks data:', data.stocks.quotes?.length, 'quotes');
         setStocksData(data.stocks);
+        console.log('[SSE] Stocks data set, calling renderStocks');
         renderStocks();
     }
     if (data.weather) {

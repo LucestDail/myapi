@@ -140,12 +140,23 @@ public class DashboardController {
             return ResponseEntity.badRequest().build();
         }
         
-        dashboardService.updateConfig(effectiveUserId, config);
+        DashboardConfig savedConfig = dashboardService.updateConfig(effectiveUserId, config);
         
         // 설정 변경 시 해당 사용자에게 즉시 새 데이터 전송 (사용자별 브로드캐스트)
-        broadcastFullDataForUser(effectiveUserId);
+        // SSE 재연결 시에도 데이터를 받지만, 즉시 반영을 위해 브로드캐스트도 수행
+        CompletableFuture.runAsync(() -> {
+            try {
+                // 잠시 대기하여 SSE 재연결이 완료될 시간 제공
+                Thread.sleep(300);
+                broadcastFullDataForUser(effectiveUserId);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                log.debug("Failed to broadcast after config update: {}", e.getMessage());
+            }
+        });
         
-        return ResponseEntity.ok(dashboardService.getConfig(effectiveUserId));
+        return ResponseEntity.ok(savedConfig);
     }
 
     /**
@@ -221,17 +232,32 @@ public class DashboardController {
      * 특정 사용자에게 전체 데이터 브로드캐스트
      */
     private void broadcastFullDataForUser(String userId) {
-        if (emitters.isEmpty()) return;
+        if (emitters.isEmpty()) {
+            log.debug("No active emitters for user {} broadcast", userId);
+            return;
+        }
 
         try {
             DashboardData data = dashboardService.getFullData(userId);
             
+            int sentCount = 0;
             // 해당 사용자의 모든 emitter에 전송
             for (SseEmitter emitter : emitters) {
                 String emitterUserId = emitterUserMap.get(emitter);
                 if (userId.equals(emitterUserId)) {
+                    log.debug("Broadcasting data to user {} emitter, stocks: {}", 
+                            userId, data.stocks() != null && data.stocks().quotes() != null 
+                            ? data.stocks().quotes().size() : 0);
                     broadcastToEmitter(emitter, "dashboard", data);
+                    sentCount++;
                 }
+            }
+            
+            if (sentCount == 0) {
+                log.warn("No active emitter found for user {} to broadcast data. Active emitters: {}", 
+                        userId, emitters.size());
+            } else {
+                log.debug("Successfully broadcasted data to {} emitter(s) for user {}", sentCount, userId);
             }
 
             // 알림 조건 검사
@@ -242,7 +268,7 @@ public class DashboardController {
                 alertIntegrationService.checkWeatherAlerts(data.weather());
             }
         } catch (Exception e) {
-            log.debug("Alert check error: {}", e.getMessage());
+            log.error("Error broadcasting data to user {}: {}", userId, e.getMessage(), e);
         }
     }
 
@@ -281,8 +307,14 @@ public class DashboardController {
             emitter.send(SseEmitter.event()
                     .name(eventName)
                     .data(jsonData));
+            
+            // 데이터 전송 로그 (디버깅용)
+            if ("dashboard".equals(eventName) && data.stocks() != null) {
+                log.debug("Sent dashboard data via SSE: {} stocks", data.stocks().quotes().size());
+            }
         } catch (Exception e) {
             // 클라이언트 연결 끊김 - 제거 대상으로 표시
+            log.debug("Failed to send SSE event: {}", e.getMessage());
             emitters.remove(emitter);
             emitterUserMap.remove(emitter);
         }

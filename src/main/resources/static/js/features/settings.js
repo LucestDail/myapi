@@ -273,12 +273,13 @@ export async function saveSettings() {
                 updateYouTubePlayer(savedConfig.youtubeUrl);
             }
             
-            // 기존 SSE 연결 종료 후 재연결하여 새 설정으로 데이터 받기
-            // 약간의 지연을 두어 서버의 broadcastFullDataForUser가 완료되도록 함
+            // SSE 재연결하여 새 설정으로 데이터 받기
+            // connectSSE() 내부에서 기존 연결을 닫고 새로 연결하므로 별도로 닫을 필요 없음
+            console.log('[Settings] Reconnecting SSE with new config, saved tickers:', savedConfig.tickers?.length || 0);
+            // 서버 브로드캐스트 완료 대기 후 재연결
             setTimeout(() => {
-                console.log('[Settings] Reconnecting SSE with new config');
                 connectSSE();
-            }, 100);
+            }, 400);
             
             startStockHighlight();
             

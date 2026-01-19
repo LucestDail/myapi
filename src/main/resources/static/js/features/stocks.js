@@ -17,9 +17,15 @@ export function renderStocks() {
     const container = document.getElementById('stocks-container');
     const timeEl = document.getElementById('stocks-time');
 
-    if (!container) return;
+    if (!container) {
+        console.warn('[Stocks] Container not found');
+        return;
+    }
 
+    console.log('[Stocks] renderStocks called, quotes:', stocksData.quotes?.length || 0);
+    
     if (!stocksData.quotes || stocksData.quotes.length === 0) {
+        console.warn('[Stocks] No quotes data available');
         container.innerHTML = '<div class="no-data">데이터 없음</div>';
         return;
     }
