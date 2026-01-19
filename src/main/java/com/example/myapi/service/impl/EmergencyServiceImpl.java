@@ -48,7 +48,7 @@ public class EmergencyServiceImpl implements EmergencyService {
             String strYesterday = sdf.format(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
 
             String rawResponse = new HttpUtil().executeGet(
-                emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strToday + "&crtDt=" + strYesterday
+                emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strToday + "&numOfRows=30"
             );
             
             // 두 JSON 데이터를 하나로 합치기
@@ -88,10 +88,10 @@ public class EmergencyServiceImpl implements EmergencyService {
             // 별도로 오늘과 어제 데이터를 각각 요청하는 방식도 지원
             if (emergencyArray.size() == 0) {
                 String strEmergencyInfo = new HttpUtil().executeGet(
-                    emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strToday
+                    emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strToday + "&numOfRows=30"
                 );
                 String strEmergencyInfoYesterday = new HttpUtil().executeGet(
-                    emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strYesterday
+                    emergencyApiUrl + "?serviceKey=" + emergencyServiceKey + "&crtDt=" + strYesterday + "&numOfRows=30"
                 );
                 
                 // 오늘 데이터 파싱 및 추가

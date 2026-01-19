@@ -2,9 +2,9 @@
 // Settings Feature Module
 // ===========================================
 
-import { userId, uiState, saveUiState, config, alertRulesData, setAlertRulesData, editingRuleId, setEditingRuleId } from '../state.js';
+import { userId, uiState, saveUiState, config, setConfig, alertRulesData, setAlertRulesData, editingRuleId, setEditingRuleId } from '../state.js';
 import { showToast, switchTab } from '../ui.js';
-import { loadConfig, updateYouTubePlayer } from '../sse.js';
+import { loadConfig, updateYouTubePlayer, connectSSE } from '../sse.js';
 import { startStockHighlight } from './stocks.js';
 import { 
     startSocialNewsAutoSlide, stopSocialNewsAutoSlide, renderSocialNews,
@@ -241,6 +241,9 @@ export async function saveSettings() {
 
     // Save to server
     try {
+        // 현재 설정된 티커 목록 가져오기 (빈 심볼 제외)
+        const validTickers = (config?.tickers || []).filter(t => t.symbol && t.symbol.trim() !== '');
+        
         const response = await fetch('/api/dashboard/config', {
             method: 'POST',
             headers: {
@@ -249,24 +252,24 @@ export async function saveSettings() {
             },
             body: JSON.stringify({
                 youtubeUrl,
-                tickers: config?.tickers || []
+                tickers: validTickers
             })
         });
 
         if (response.ok) {
+            const savedConfig = await response.json();
             showToast('설정이 저장되었습니다', 'info');
+            
+            // 서버에서 반환된 설정으로 config 업데이트
+            setConfig(savedConfig);
+            
             // Only update YouTube player if URL actually changed
-            if (config && config.youtubeUrl !== youtubeUrl) {
-                updateYouTubePlayer(youtubeUrl);
-            }
-            // Update config
-            if (config) {
-                config.youtubeUrl = youtubeUrl;
-                config.tickers = config.tickers || [];
+            if (savedConfig.youtubeUrl && savedConfig.youtubeUrl !== youtubeUrl) {
+                updateYouTubePlayer(savedConfig.youtubeUrl);
             }
             
-            // Reload config from server to get updated tickers
-            await loadConfig();
+            // SSE 연결 재설정하여 새 설정으로 데이터 받기
+            connectSSE();
             
             startStockHighlight();
             
