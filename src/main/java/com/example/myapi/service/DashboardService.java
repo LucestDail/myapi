@@ -6,6 +6,7 @@ import com.example.myapi.dto.dashboard.DashboardData;
 import com.example.myapi.dto.dashboard.DashboardData.*;
 import com.example.myapi.dto.finnhub.FinnhubQuoteResponse;
 import com.example.myapi.dto.rss.RssFeedResponse;
+import com.example.myapi.dto.settings.UserSettingsDto;
 import com.example.myapi.dto.system.SystemStatusResponse;
 import com.example.myapi.dto.weather.CityWeatherResponse;
 import org.slf4j.Logger;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * 대시보드 데이터 통합 서비스
@@ -29,38 +30,109 @@ public class DashboardService {
     private final WeatherService weatherService;
     private final RssService rssService;
     private final SystemStatusService systemStatusService;
-
-    // 현재 설정 저장 (인메모리)
-    private final AtomicReference<DashboardConfig> currentConfig = 
-            new AtomicReference<>(DashboardConfig.defaultConfig());
+    private final UserSettingsService userSettingsService;
 
     public DashboardService(
             FinnhubService finnhubService,
             WeatherService weatherService,
             RssService rssService,
-            SystemStatusService systemStatusService) {
+            SystemStatusService systemStatusService,
+            UserSettingsService userSettingsService) {
         this.finnhubService = finnhubService;
         this.weatherService = weatherService;
         this.rssService = rssService;
         this.systemStatusService = systemStatusService;
+        this.userSettingsService = userSettingsService;
     }
 
     // ==================== 설정 관리 ====================
 
-    public DashboardConfig getConfig() {
-        return currentConfig.get();
+    /**
+     * 사용자별 대시보드 설정 조회
+     */
+    public DashboardConfig getConfig(String userId) {
+        UserSettingsDto settings = userSettingsService.getSettings(userId);
+        return convertToDashboardConfig(settings);
     }
 
-    public void updateConfig(DashboardConfig config) {
-        currentConfig.set(config);
-        log.info("Dashboard config updated: {} tickers, youtube: {}", 
-                config.tickers().size(), config.youtubeUrl());
+    /**
+     * 사용자별 대시보드 설정 저장
+     */
+    public DashboardConfig updateConfig(String userId, DashboardConfig config) {
+        UserSettingsDto currentSettings = userSettingsService.getSettings(userId);
+        UserSettingsDto updatedSettings = mergeDashboardConfig(currentSettings, config);
+        userSettingsService.saveSettings(userId, updatedSettings);
+        log.info("Dashboard config updated for user {}: {} tickers, youtube: {}", 
+                userId, config.tickers().size(), config.youtubeUrl());
+        return config;
+    }
+
+    /**
+     * UserSettingsDto를 DashboardConfig로 변환
+     */
+    private DashboardConfig convertToDashboardConfig(UserSettingsDto settings) {
+        // MediaSettings의 첫 번째 URL을 youtubeUrl로 사용
+        String youtubeUrl = settings.media().youtubeUrls().isEmpty() 
+                ? "https://www.youtube.com/watch?v=jfKfPfyJRdk"
+                : settings.media().youtubeUrls().get(0);
+        
+        // StockSettings의 tickers를 TickerConfig 리스트로 변환
+        List<TickerConfig> tickers = settings.stocks().tickers().stream()
+                .map(t -> new TickerConfig(t.symbol(), t.name()))
+                .collect(Collectors.toList());
+        
+        return new DashboardConfig(youtubeUrl, tickers);
+    }
+
+    /**
+     * DashboardConfig를 UserSettingsDto에 병합
+     */
+    private UserSettingsDto mergeDashboardConfig(UserSettingsDto current, DashboardConfig config) {
+        // MediaSettings 업데이트
+        List<String> youtubeUrls = config.youtubeUrl() != null 
+                ? List.of(config.youtubeUrl())
+                : current.media().youtubeUrls();
+        
+        UserSettingsDto.MediaSettings mediaSettings = new UserSettingsDto.MediaSettings(
+                youtubeUrls,
+                current.media().playOrder(),
+                current.media().autoPlay(),
+                current.media().autoStartTime(),
+                current.media().autoStopTime()
+        );
+
+        // StockSettings 업데이트
+        List<UserSettingsDto.StockSettings.TickerConfig> tickers = config.tickers().stream()
+                .map(t -> new UserSettingsDto.StockSettings.TickerConfig(t.symbol(), t.name()))
+                .collect(Collectors.toList());
+        
+        UserSettingsDto.StockSettings stockSettings = new UserSettingsDto.StockSettings(
+                tickers,
+                current.stocks().favorites(),
+                current.stocks().sortBy(),
+                current.stocks().sortOrder(),
+                current.stocks().filter(),
+                current.stocks().filterThreshold(),
+                current.stocks().alerts()
+        );
+
+        return new UserSettingsDto(
+                mediaSettings,
+                stockSettings,
+                current.news(),
+                current.weather(),
+                current.system(),
+                current.general()
+        );
     }
 
     // ==================== 주식 데이터 ====================
 
-    public StocksData getStocksData() {
-        DashboardConfig config = currentConfig.get();
+    /**
+     * 사용자별 주식 데이터 조회
+     */
+    public StocksData getStocksData(String userId) {
+        DashboardConfig config = getConfig(userId);
         List<StockQuote> quotes = new ArrayList<>();
 
         for (TickerConfig ticker : config.tickers()) {
@@ -138,9 +210,12 @@ public class DashboardService {
 
     // ==================== 전체 데이터 ====================
 
-    public DashboardData getFullData() {
+    /**
+     * 사용자별 전체 데이터 조회
+     */
+    public DashboardData getFullData(String userId) {
         return DashboardData.full(
-                getStocksData(),
+                getStocksData(userId),
                 getWeatherData(),
                 getNewsData(),
                 getSystemData()

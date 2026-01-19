@@ -89,7 +89,11 @@ public class AIReportController {
      * AI 보고서 생성 (RAG 방식 - 모든 선택된 데이터를 컨텍스트로 전달)
      */
     @PostMapping(value = "/generate", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String generateReport(@RequestBody Map<String, Object> request) {
+    public String generateReport(
+            @RequestAttribute(value = "userId", required = false) String userId,
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @RequestBody Map<String, Object> request) {
+        String effectiveUserId = userId != null ? userId : headerUserId;
         try {
             @SuppressWarnings("unchecked")
             Map<String, Boolean> topics = (Map<String, Boolean>) request.getOrDefault("topics", new HashMap<>());
@@ -144,7 +148,9 @@ public class AIReportController {
             DashboardData cachedDashboardData = null;
             if (includeStocks || includeYahooFinance || includeYonhapNews || includeWeather || includeSystem) {
                 try {
-                    cachedDashboardData = dashboardService.getFullData();
+                    // 사용자 ID가 없으면 기본값 사용 (UserSettingsService가 기본 설정 반환)
+                    String userIdForData = effectiveUserId != null ? effectiveUserId : "default";
+                    cachedDashboardData = dashboardService.getFullData(userIdForData);
                 } catch (Exception e) {
                     log.warn("Failed to get cached dashboard data: {}", e.getMessage());
                 }
@@ -189,7 +195,9 @@ public class AIReportController {
             // 3. 야후 파이낸스 뉴스 (모든 티커의 뉴스 수집)
             if (includeYahooFinance) {
                 try {
-                    DashboardConfig config = dashboardService.getConfig();
+                    // 사용자 ID가 없으면 기본값 사용
+                    String userIdForConfig = effectiveUserId != null ? effectiveUserId : "default";
+                    DashboardConfig config = dashboardService.getConfig(userIdForConfig);
                     List<RssItem> allYahooNews = new ArrayList<>();
                     
                     // 모든 티커의 뉴스 수집

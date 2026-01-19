@@ -80,6 +80,10 @@ export let uiState = {
         autoSlide: false,
         slideInterval: 5
     },
+    emergency: {
+        autoSlide: false,
+        slideInterval: 5
+    },
     todo: {
         filter: 'all'
     },
@@ -115,6 +119,10 @@ export let trafficSlideIndex = 0;
 export let trafficSlideTimer = null;
 export let trafficPageIndex = 0;
 export const TRAFFIC_PER_PAGE = 10;
+export let emergencySlideIndex = 0;
+export let emergencySlideTimer = null;
+export let emergencyPageIndex = 0;
+export const EMERGENCY_PER_PAGE = 10;
 export let todosData = [];
 export let lifeInfoData = null;
 export let systemHistoryData = [];
@@ -166,6 +174,9 @@ export function setSocialNewsPageIndex(idx) { socialNewsPageIndex = idx; }
 export function setTrafficSlideIndex(idx) { trafficSlideIndex = idx; }
 export function setTrafficSlideTimer(timer) { trafficSlideTimer = timer; }
 export function setTrafficPageIndex(idx) { trafficPageIndex = idx; }
+export function setEmergencySlideIndex(idx) { emergencySlideIndex = idx; }
+export function setEmergencySlideTimer(timer) { emergencySlideTimer = timer; }
+export function setEmergencyPageIndex(idx) { emergencyPageIndex = idx; }
 export function setNewsSlideIndex(idx) { newsSlideIndex = idx; }
 export function setNewsSlideTimer(timer) { newsSlideTimer = timer; }
 export function setNewsPageIndex(idx) { newsPageIndex = idx; }

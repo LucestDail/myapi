@@ -8,7 +8,9 @@ import {
     socialNewsSlideIndex, setSocialNewsSlideIndex, socialNewsSlideTimer, setSocialNewsSlideTimer,
     socialNewsPageIndex, setSocialNewsPageIndex, SOCIAL_NEWS_PER_PAGE,
     trafficSlideIndex, setTrafficSlideIndex, trafficSlideTimer, setTrafficSlideTimer,
-    trafficPageIndex, setTrafficPageIndex, TRAFFIC_PER_PAGE
+    trafficPageIndex, setTrafficPageIndex, TRAFFIC_PER_PAGE,
+    emergencySlideIndex, setEmergencySlideIndex, emergencySlideTimer, setEmergencySlideTimer,
+    emergencyPageIndex, setEmergencyPageIndex, EMERGENCY_PER_PAGE
 } from '../state.js';
 import { formatSectionTime, formatNewsDate } from '../utils.js';
 
@@ -203,10 +205,68 @@ export function renderEmergency() {
         return;
     }
 
-    let html = '<table class="emergency-table"><thead><tr><th>일시</th><th>지역</th><th>내용</th><th>분류</th><th>상세</th></tr></thead><tbody>';
+    // Sort by date (most recent first) - createDate or registerDate 형식: "20260118181908" (YYYYMMDDHHmmss)
+    const items = [...emergencyData.items].sort((a, b) => {
+        const dateA = a.createDate || a.registerDate || '';
+        const dateB = b.createDate || b.registerDate || '';
+        return dateB.localeCompare(dateA); // Descending order (newest first)
+    });
+
+    // Helper function to get emergency items based on mode
+    function getEmergencyForDisplay(emergencyArray, count) {
+        if (uiState.emergency && uiState.emergency.autoSlide) {
+            if (emergencyArray.length <= count) return emergencyArray.slice(0, count);
+            const startIdx = emergencySlideIndex % emergencyArray.length;
+            const result = [];
+            for (let i = 0; i < Math.min(count, emergencyArray.length); i++) {
+                result.push(emergencyArray[(startIdx + i) % emergencyArray.length]);
+            }
+            return result;
+        } else {
+            const startIdx = emergencyPageIndex * count;
+            return emergencyArray.slice(startIdx, startIdx + count);
+        }
+    }
+
+    function getPaginationInfo(emergencyArray, count) {
+        const totalPages = Math.ceil(emergencyArray.length / count);
+        const currentPage = emergencyPageIndex + 1;
+        return { totalPages, currentPage, hasNext: currentPage < totalPages, hasPrev: currentPage > 1 };
+    }
+
+    const pagination = getPaginationInfo(items, EMERGENCY_PER_PAGE);
+    let html = '<div class="news-section-title">';
+    html += '<span>실시간 긴급재난문자</span>';
+    if (uiState.emergency && uiState.emergency.autoSlide) {
+        html += '<span class="news-auto-slide">▶ 자동</span>';
+    } else if (items.length > EMERGENCY_PER_PAGE) {
+        html += `<span class="news-pagination">
+            <button class="page-btn" onclick="changeEmergencyPage(-1)" ${!pagination.hasPrev ? 'disabled' : ''}>◀</button>
+            <span class="page-info">${pagination.currentPage}/${pagination.totalPages}</span>
+            <button class="page-btn" onclick="changeEmergencyPage(1)" ${!pagination.hasNext ? 'disabled' : ''}>▶</button>
+        </span>`;
+    }
+    html += '</div>';
+
+    html += '<table class="emergency-table"><thead><tr><th>일시</th><th>지역</th><th>내용</th><th>분류</th><th>상세</th></tr></thead><tbody>';
     
-    emergencyData.items.slice(0, 30).forEach(item => {
-        const date = item.createDate || item.registerDate || '';
+    const displayedItems = getEmergencyForDisplay(items, EMERGENCY_PER_PAGE);
+    displayedItems.forEach(item => {
+        // createDate 또는 registerDate 형식: "20260118181908" -> "2026-01-18 18:19:08"
+        let formattedDate = '';
+        const dateStr = item.createDate || item.registerDate || '';
+        if (dateStr.length === 14) {
+            const year = dateStr.substring(0, 4);
+            const month = dateStr.substring(4, 6);
+            const day = dateStr.substring(6, 8);
+            const hour = dateStr.substring(8, 10);
+            const minute = dateStr.substring(10, 12);
+            const second = dateStr.substring(12, 14);
+            formattedDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+        } else {
+            formattedDate = dateStr;
+        }
+        
         const location = item.locationName || '';
         const content = item.msg || '';
         const category = item.category || item.emergencyStep || '';
@@ -214,7 +274,7 @@ export function renderEmergency() {
         
         html += `
             <tr>
-                <td>${date}</td>
+                <td>${formattedDate}</td>
                 <td>${location}</td>
                 <td>${content}</td>
                 <td>${category}</td>
@@ -421,6 +481,88 @@ export function initTrafficAutoSlide() {
 }
 
 /**
+ * Toggle emergency auto slide
+ */
+export function toggleEmergencyAutoSlide() {
+    const checkbox = document.getElementById('emergency-auto-slide');
+    if (checkbox) {
+        if (!uiState.emergency) {
+            uiState.emergency = { autoSlide: false, slideInterval: 5 };
+        }
+        uiState.emergency.autoSlide = checkbox.checked;
+        saveUiState();
+        
+        if (uiState.emergency.autoSlide) {
+            startEmergencyAutoSlide();
+        } else {
+            stopEmergencyAutoSlide();
+            setEmergencyPageIndex(0);
+        }
+        renderEmergency();
+    }
+}
+
+/**
+ * Start emergency auto slide
+ */
+export function startEmergencyAutoSlide() {
+    stopEmergencyAutoSlide();
+    const interval = (uiState.emergency?.slideInterval || 5) * 1000;
+    const timer = setInterval(() => {
+        if (emergencyData && emergencyData.items) {
+            setEmergencySlideIndex(emergencySlideIndex + 1);
+            renderEmergency();
+        }
+    }, interval);
+    setEmergencySlideTimer(timer);
+}
+
+/**
+ * Stop emergency auto slide
+ */
+export function stopEmergencyAutoSlide() {
+    if (emergencySlideTimer) {
+        clearInterval(emergencySlideTimer);
+        setEmergencySlideTimer(null);
+    }
+}
+
+/**
+ * Change emergency page
+ */
+export function changeEmergencyPage(delta) {
+    if (!emergencyData || !emergencyData.items) return;
+    // Sort by date before calculating pages
+    const items = [...emergencyData.items].sort((a, b) => {
+        const dateA = a.createDate || a.registerDate || '';
+        const dateB = b.createDate || b.registerDate || '';
+        return dateB.localeCompare(dateA);
+    });
+    const totalPages = Math.ceil(items.length / EMERGENCY_PER_PAGE);
+    const newPage = emergencyPageIndex + delta;
+    if (newPage >= 0 && newPage < totalPages) {
+        setEmergencyPageIndex(newPage);
+        renderEmergency();
+    }
+}
+
+/**
+ * Initialize emergency auto slide checkbox
+ */
+export function initEmergencyAutoSlide() {
+    const checkbox = document.getElementById('emergency-auto-slide');
+    if (checkbox) {
+        if (!uiState.emergency) {
+            uiState.emergency = { autoSlide: false, slideInterval: 5 };
+        }
+        checkbox.checked = uiState.emergency.autoSlide;
+        if (uiState.emergency.autoSlide) {
+            startEmergencyAutoSlide();
+        }
+    }
+}
+
+/**
  * Initialize social features
  */
 export function initSocial() {
@@ -431,6 +573,7 @@ export function initSocial() {
     // Initialize auto slide checkboxes
     initSocialNewsAutoSlide();
     initTrafficAutoSlide();
+    initEmergencyAutoSlide();
     
     // Set up periodic refresh (5 minutes for traffic and emergency, 1 hour for news)
     setInterval(loadTraffic, 5 * 60 * 1000);

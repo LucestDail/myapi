@@ -43,7 +43,8 @@ import {
     initSocial, loadSocialNews, loadTraffic, loadEmergency,
     renderSocialNews, renderTraffic, renderEmergency,
     toggleSocialNewsAutoSlide, startSocialNewsAutoSlide, stopSocialNewsAutoSlide, changeSocialNewsPage,
-    toggleTrafficAutoSlide, startTrafficAutoSlide, stopTrafficAutoSlide, changeTrafficPage
+    toggleTrafficAutoSlide, startTrafficAutoSlide, stopTrafficAutoSlide, changeTrafficPage,
+    toggleEmergencyAutoSlide, changeEmergencyPage
 } from './features/social.js';
 import { 
     openSettings, closeSettings, saveSettings, 
@@ -134,6 +135,10 @@ window.changeSocialNewsPage = changeSocialNewsPage;
 // Traffic Functions
 window.toggleTrafficAutoSlide = toggleTrafficAutoSlide;
 window.changeTrafficPage = changeTrafficPage;
+
+// Emergency Functions
+window.toggleEmergencyAutoSlide = toggleEmergencyAutoSlide;
+window.changeEmergencyPage = changeEmergencyPage;
 
 // Todo Functions
 window.setTodoFilter = setTodoFilter;

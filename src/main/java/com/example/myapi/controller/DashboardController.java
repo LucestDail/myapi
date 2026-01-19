@@ -15,6 +15,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 대시보드 SSE 컨트롤러
@@ -32,6 +33,8 @@ public class DashboardController {
     private final AlertIntegrationService alertIntegrationService;
     private final ObjectMapper objectMapper;
     private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
+    // 사용자 ID와 emitter 매핑 (향후 개선용)
+    private final ConcurrentHashMap<SseEmitter, String> emitterUserMap = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     public DashboardController(DashboardService dashboardService, 
@@ -44,31 +47,43 @@ public class DashboardController {
     }
 
     /**
-     * SSE 스트림 연결
+     * SSE 스트림 연결 (사용자별)
      */
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter stream() {
+    public SseEmitter stream(
+            @RequestAttribute(value = "userId", required = false) String userId,
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId) {
+        String effectiveUserId = userId != null ? userId : headerUserId;
+        if (effectiveUserId == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
         emitters.add(emitter);
+        emitterUserMap.put(emitter, effectiveUserId);
 
         emitter.onCompletion(() -> {
             emitters.remove(emitter);
+            emitterUserMap.remove(emitter);
             log.info("SSE connection completed. Active connections: {}", emitters.size());
         });
 
         emitter.onTimeout(() -> {
             emitters.remove(emitter);
+            emitterUserMap.remove(emitter);
             log.info("SSE connection timed out. Active connections: {}", emitters.size());
         });
 
         emitter.onError(e -> {
             emitters.remove(emitter);
+            emitterUserMap.remove(emitter);
             log.warn("SSE connection error: {}. Active connections: {}", e.getMessage(), emitters.size());
         });
 
-        log.info("New SSE connection established. Active connections: {}", emitters.size());
+        log.info("New SSE connection established for user: {}. Active connections: {}", effectiveUserId, emitters.size());
 
         // 연결 즉시 전체 데이터 전송 (비동기로 처리하여 연결 지연 방지)
+        final String finalUserId = effectiveUserId;
         CompletableFuture.runAsync(() -> {
             try {
                 // 초기 연결 확인을 위한 heartbeat 먼저 전송
@@ -79,7 +94,7 @@ public class DashboardController {
                 // 약간의 지연 후 전체 데이터 전송
                 Thread.sleep(100);
                 
-                DashboardData fullData = dashboardService.getFullData();
+                DashboardData fullData = dashboardService.getFullData(finalUserId);
                 emitter.send(SseEmitter.event()
                         .name("dashboard")
                         .data(objectMapper.writeValueAsString(fullData)));
@@ -97,32 +112,53 @@ public class DashboardController {
     }
 
     /**
-     * 현재 설정 조회
+     * 현재 설정 조회 (사용자별)
      */
     @GetMapping("/config")
-    public ResponseEntity<DashboardConfig> getConfig() {
-        return ResponseEntity.ok(dashboardService.getConfig());
+    public ResponseEntity<DashboardConfig> getConfig(
+            @RequestAttribute(value = "userId", required = false) String userId,
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId) {
+        String effectiveUserId = userId != null ? userId : headerUserId;
+        if (effectiveUserId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(dashboardService.getConfig(effectiveUserId));
     }
 
     /**
-     * 설정 업데이트
+     * 설정 업데이트 (사용자별)
      */
     @PostMapping("/config")
-    public ResponseEntity<DashboardConfig> updateConfig(@RequestBody DashboardConfig config) {
-        dashboardService.updateConfig(config);
+    public ResponseEntity<DashboardConfig> updateConfig(
+            @RequestAttribute(value = "userId", required = false) String userId,
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId,
+            @RequestBody DashboardConfig config) {
+        String effectiveUserId = userId != null ? userId : headerUserId;
+        if (effectiveUserId == null) {
+            return ResponseEntity.badRequest().build();
+        }
         
-        // 설정 변경 시 모든 클라이언트에 즉시 새 데이터 전송
-        broadcastFullData();
+        dashboardService.updateConfig(effectiveUserId, config);
         
-        return ResponseEntity.ok(dashboardService.getConfig());
+        // 설정 변경 시 해당 사용자에게 즉시 새 데이터 전송
+        // TODO: 사용자별 브로드캐스트로 변경 필요 (현재는 전체 브로드캐스트)
+        broadcastFullDataForUser(effectiveUserId);
+        
+        return ResponseEntity.ok(dashboardService.getConfig(effectiveUserId));
     }
 
     /**
-     * 현재 데이터 스냅샷 조회 (비 SSE)
+     * 현재 데이터 스냅샷 조회 (비 SSE, 사용자별)
      */
     @GetMapping("/data")
-    public ResponseEntity<DashboardData> getData() {
-        return ResponseEntity.ok(dashboardService.getFullData());
+    public ResponseEntity<DashboardData> getData(
+            @RequestAttribute(value = "userId", required = false) String userId,
+            @RequestHeader(value = "X-User-Id", required = false) String headerUserId) {
+        String effectiveUserId = userId != null ? userId : headerUserId;
+        if (effectiveUserId == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(dashboardService.getFullData(effectiveUserId));
     }
 
     /**
@@ -152,14 +188,52 @@ public class DashboardController {
         }, 60, 60, TimeUnit.SECONDS);
     }
 
+    /**
+     * 전체 데이터 브로드캐스트 (모든 사용자에게 각자의 설정에 맞는 데이터 전송)
+     */
     private void broadcastFullData() {
         if (emitters.isEmpty()) return;
+        
+        // 각 사용자별로 개인화된 데이터 브로드캐스트
+        for (SseEmitter emitter : emitters) {
+            String userId = emitterUserMap.get(emitter);
+            if (userId == null) continue;
+            
+            try {
+                DashboardData data = dashboardService.getFullData(userId);
+                broadcastToEmitter(emitter, "dashboard", data);
+                
+                // 알림 조건 검사 (한 번만 수행)
+                if (emitter == emitters.get(0) && data.stocks() != null && data.stocks().quotes() != null) {
+                    alertIntegrationService.checkStockAlerts(data.stocks().quotes());
+                }
+                if (emitter == emitters.get(0) && data.weather() != null) {
+                    alertIntegrationService.checkWeatherAlerts(data.weather());
+                }
+            } catch (Exception e) {
+                log.debug("Failed to broadcast to user {}: {}", userId, e.getMessage());
+            }
+        }
+    }
 
-        DashboardData data = dashboardService.getFullData();
-        broadcast("dashboard", data);
+    /**
+     * 특정 사용자에게 전체 데이터 브로드캐스트
+     */
+    private void broadcastFullDataForUser(String userId) {
+        if (emitters.isEmpty()) return;
 
-        // 알림 조건 검사
         try {
+            DashboardData data = dashboardService.getFullData(userId);
+            
+            // 해당 사용자의 모든 emitter에 전송
+            for (SseEmitter emitter : emitters) {
+                String emitterUserId = emitterUserMap.get(emitter);
+                if (userId.equals(emitterUserId)) {
+                    broadcastToEmitter(emitter, "dashboard", data);
+                }
+            }
+
+            // 알림 조건 검사
             if (data.stocks() != null && data.stocks().quotes() != null) {
                 alertIntegrationService.checkStockAlerts(data.stocks().quotes());
             }
@@ -176,6 +250,8 @@ public class DashboardController {
 
         DashboardData.SystemData systemData = dashboardService.getSystemData();
         DashboardData data = DashboardData.system(systemData);
+        
+        // 시스템 데이터는 공통이므로 모든 사용자에게 브로드캐스트
         broadcast("system", data);
 
         // 시스템 알림 조건 검사
@@ -186,8 +262,36 @@ public class DashboardController {
         }
     }
 
+    /**
+     * 단일 emitter에 이벤트 전송
+     */
+    private void broadcastToEmitter(SseEmitter emitter, String eventName, DashboardData data) {
+        if (data == null) return;
+        
+        String jsonData;
+        try {
+            jsonData = objectMapper.writeValueAsString(data);
+        } catch (Exception e) {
+            log.error("Failed to serialize data: {}", e.getMessage());
+            return;
+        }
+
+        try {
+            emitter.send(SseEmitter.event()
+                    .name(eventName)
+                    .data(jsonData));
+        } catch (Exception e) {
+            // 클라이언트 연결 끊김 - 제거 대상으로 표시
+            emitters.remove(emitter);
+            emitterUserMap.remove(emitter);
+        }
+    }
+
+    /**
+     * 모든 emitter에 동일한 데이터 브로드캐스트 (시스템 데이터 등 공통 데이터용)
+     */
     private void broadcast(String eventName, DashboardData data) {
-        if (emitters.isEmpty()) return;
+        if (emitters.isEmpty() || data == null) return;
         
         String jsonData;
         try {
@@ -212,6 +316,7 @@ public class DashboardController {
 
         if (!deadEmitters.isEmpty()) {
             emitters.removeAll(deadEmitters);
+            deadEmitters.forEach(emitterUserMap::remove);
             log.debug("Removed {} dead emitters. Active: {}", deadEmitters.size(), emitters.size());
         }
     }
