@@ -276,10 +276,8 @@ export async function saveSettings() {
             // SSE 재연결하여 새 설정으로 데이터 받기
             // connectSSE() 내부에서 기존 연결을 닫고 새로 연결하므로 별도로 닫을 필요 없음
             console.log('[Settings] Reconnecting SSE with new config, saved tickers:', savedConfig.tickers?.length || 0);
-            // 서버 브로드캐스트 완료 대기 후 재연결
-            setTimeout(() => {
-                connectSSE();
-            }, 400);
+            // 즉시 재연결 (SSE 연결 시 서버에서 자동으로 최신 데이터 전송)
+            connectSSE();
             
             startStockHighlight();
             

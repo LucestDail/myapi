@@ -83,6 +83,8 @@ public class DashboardController {
         });
 
         log.info("New SSE connection established for user: {}. Active connections: {}", effectiveUserId, emitters.size());
+        log.debug("SSE connection params - RequestAttribute: {}, RequestHeader: {}, RequestParam: {}", 
+                userId, headerUserId, paramUserId);
 
         // 연결 즉시 전체 데이터 전송 (비동기로 처리하여 연결 지연 방지)
         final String finalUserId = effectiveUserId;
@@ -97,9 +99,13 @@ public class DashboardController {
                 Thread.sleep(100);
                 
                 DashboardData fullData = dashboardService.getFullData(finalUserId);
+                String jsonData = objectMapper.writeValueAsString(fullData);
+                log.debug("Sending initial dashboard data to user {}: {} stocks", 
+                        finalUserId, fullData.stocks() != null && fullData.stocks().quotes() != null 
+                        ? fullData.stocks().quotes().size() : 0);
                 emitter.send(SseEmitter.event()
                         .name("dashboard")
-                        .data(objectMapper.writeValueAsString(fullData)));
+                        .data(jsonData));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 emitters.remove(emitter);
@@ -143,18 +149,9 @@ public class DashboardController {
         DashboardConfig savedConfig = dashboardService.updateConfig(effectiveUserId, config);
         
         // 설정 변경 시 해당 사용자에게 즉시 새 데이터 전송 (사용자별 브로드캐스트)
-        // SSE 재연결 시에도 데이터를 받지만, 즉시 반영을 위해 브로드캐스트도 수행
-        CompletableFuture.runAsync(() -> {
-            try {
-                // 잠시 대기하여 SSE 재연결이 완료될 시간 제공
-                Thread.sleep(300);
-                broadcastFullDataForUser(effectiveUserId);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } catch (Exception e) {
-                log.debug("Failed to broadcast after config update: {}", e.getMessage());
-            }
-        });
+        // SSE 재연결을 기다리지 않고 즉시 브로드캐스트 시도
+        // 만약 emitter가 없으면 SSE 재연결 시 자동으로 데이터를 받음
+        broadcastFullDataForUser(effectiveUserId);
         
         return ResponseEntity.ok(savedConfig);
     }
