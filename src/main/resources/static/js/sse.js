@@ -26,7 +26,7 @@ export function initSSERenderers(stocks, weather, news, system) {
  */
 export async function loadConfig() {
     try {
-        const response = await fetch('/api/dashboard/config', {
+        const response = await fetch('api/dashboard/config', {
             headers: { 'X-User-Id': userId }
         });
         const configData = await response.json();
@@ -84,7 +84,7 @@ export function connectSSE() {
     // EventSource는 헤더를 설정할 수 없으므로 쿼리 파라미터로 userId 전달
     const currentUserId = userId; // userId가 변경되지 않도록 현재 값 저장
     console.log('[SSE] Connecting with userId:', currentUserId);
-    const newEventSource = new EventSource(`/api/dashboard/stream?userId=${encodeURIComponent(currentUserId)}`);
+    const newEventSource = new EventSource(`api/dashboard/stream?userId=${encodeURIComponent(currentUserId)}`);
     setEventSource(newEventSource);
 
     newEventSource.onopen = () => {

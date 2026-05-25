@@ -244,7 +244,7 @@ export async function loadStockNews(symbol) {
     listEl.innerHTML = '<div class="stock-news-empty">뉴스 로딩 중...</div>';
     
     try {
-        const response = await fetch(`/api/rss/yahoo/stock?symbol=${symbol}`);
+        const response = await fetch(`api/rss/yahoo/stock?symbol=${symbol}`);
         if (!response.ok) throw new Error('Failed to fetch news');
         
         const data = await response.json();

@@ -25,7 +25,7 @@ async function populateProfileInfo() {
     const locationEl = document.getElementById('profile-location');
     if (locationEl) {
         try {
-            const response = await fetch('/api/location/weather');
+            const response = await fetch('api/location/weather');
             if (response.ok) {
                 const data = await response.json();
                 locationEl.textContent = data.location || '알 수 없음';
@@ -248,7 +248,7 @@ export async function saveSettings() {
         
         console.log('[Settings] Saving config with tickers:', validTickers);
         
-        const response = await fetch('/api/dashboard/config', {
+        const response = await fetch('api/dashboard/config', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -311,7 +311,7 @@ export async function saveSettings() {
  */
 export async function loadAlertRules() {
     try {
-        const response = await fetch('/api/alerts/rules', {
+        const response = await fetch('api/alerts/rules', {
             headers: { 'X-User-Id': userId }
         });
         if (response.ok) {
@@ -366,7 +366,7 @@ export async function toggleAlertRule(id) {
     if (!rule) return;
 
     try {
-        await fetch(`/api/alerts/rules/${id}`, {
+        await fetch(`api/alerts/rules/${id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -385,7 +385,7 @@ export async function toggleAlertRule(id) {
  */
 export async function deleteAlertRule(id) {
     try {
-        await fetch(`/api/alerts/rules/${id}`, {
+        await fetch(`api/alerts/rules/${id}`, {
             method: 'DELETE',
             headers: { 'X-User-Id': userId }
         });

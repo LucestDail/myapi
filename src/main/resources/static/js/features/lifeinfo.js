@@ -11,7 +11,7 @@ import { showToast } from '../ui.js';
  */
 export async function loadLifeInfo() {
     try {
-        const response = await fetch('/api/info/summary?location=Seoul&lat=37.5665&lon=126.9780');
+        const response = await fetch('api/info/summary?location=Seoul&lat=37.5665&lon=126.9780');
         if (response.ok) {
             setLifeInfoData(await response.json());
             renderLifeInfo();

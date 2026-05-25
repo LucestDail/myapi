@@ -84,7 +84,7 @@ export function renderSystem(systemData, timestamp) {
 export async function updateSystemExtended(systemData) {
     // Fetch full system status for disk info
     try {
-        const response = await fetch('/api/system/status');
+        const response = await fetch('api/system/status');
         if (response.ok) {
             const fullStatus = await response.json();
             updateDiskInfo(fullStatus.disks);
@@ -185,7 +185,7 @@ async function measureNetworkSpeed() {
     
     try {
         const startTime = performance.now();
-        const response = await fetch('/api/system/status', { cache: 'no-cache' });
+        const response = await fetch('api/system/status', { cache: 'no-cache' });
         const endTime = performance.now();
         
         if (response.ok) {
@@ -205,7 +205,7 @@ async function measureNetworkSpeed() {
  */
 export async function loadSystemHistory() {
     try {
-        const response = await fetch(`/api/system/history?period=${historyPeriod}`);
+        const response = await fetch(`api/system/history?period=${historyPeriod}`);
         if (response.ok) {
             setSystemHistoryData(await response.json());
             renderSystemChart();

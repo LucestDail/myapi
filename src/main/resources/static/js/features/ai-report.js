@@ -259,7 +259,7 @@ export async function generateAIReport() {
     }, 2000); // 2초마다 다음 메시지
 
     try {
-        const response = await fetch('/api/ai-report/generate', {
+        const response = await fetch('api/ai-report/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

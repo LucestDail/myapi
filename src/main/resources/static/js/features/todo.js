@@ -11,7 +11,7 @@ import { showToast } from '../ui.js';
 export async function loadTodos() {
     try {
         const filter = uiState.todo.filter === 'all' ? '' : `?filter=${uiState.todo.filter}`;
-        const response = await fetch(`/api/todos${filter}`, {
+        const response = await fetch(`api/todos${filter}`, {
             headers: { 'X-User-Id': userId }
         });
         if (response.ok) {
@@ -91,7 +91,7 @@ export async function addTodo() {
     if (!content) return;
 
     try {
-        const response = await fetch('/api/todos', {
+        const response = await fetch('api/todos', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -124,7 +124,7 @@ export function handleTodoKeypress(event) {
  */
 export async function toggleTodoComplete(id, completed) {
     try {
-        await fetch(`/api/todos/${id}`, {
+        await fetch(`api/todos/${id}`, {
             method: 'PUT',
             headers: { 
                 'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ export async function toggleTodoComplete(id, completed) {
  */
 export async function deleteTodo(id) {
     try {
-        await fetch(`/api/todos/${id}`, {
+        await fetch(`api/todos/${id}`, {
             method: 'DELETE',
             headers: { 'X-User-Id': userId }
         });
@@ -161,7 +161,7 @@ export async function clearCompletedTodos() {
     
     for (const id of completedIds) {
         try {
-            await fetch(`/api/todos/${id}`, {
+            await fetch(`api/todos/${id}`, {
                 method: 'DELETE',
                 headers: { 'X-User-Id': userId }
             });

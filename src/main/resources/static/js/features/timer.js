@@ -18,7 +18,7 @@ export async function initTimer() {
     try {
         // Try to get latest timer or create new one
         const mode = uiState.timer.mode;
-        const response = await fetch(`/api/timer/${mode}`, {
+        const response = await fetch(`api/timer/${mode}`, {
             headers: { 'X-User-Id': userId }
         });
         if (response.ok) {
@@ -174,7 +174,7 @@ export async function startTimer() {
         : uiState.timer.duration * 60;
 
     try {
-        const response = await fetch(`/api/timer/${mode}/start`, {
+        const response = await fetch(`api/timer/${mode}/start`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
@@ -198,7 +198,7 @@ export async function startTimer() {
 export async function pauseTimer() {
     const mode = uiState.timer.mode;
     try {
-        const response = await fetch(`/api/timer/${mode}/pause`, {
+        const response = await fetch(`api/timer/${mode}/pause`, {
             method: 'POST',
             headers: { 'X-User-Id': userId }
         });
@@ -226,7 +226,7 @@ export async function resumeTimer() {
 export async function resetTimer() {
     const mode = uiState.timer.mode;
     try {
-        const response = await fetch(`/api/timer/${mode}/stop`, {
+        const response = await fetch(`api/timer/${mode}/stop`, {
             method: 'POST',
             headers: { 'X-User-Id': userId }
         });

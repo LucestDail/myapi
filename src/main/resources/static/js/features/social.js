@@ -301,7 +301,7 @@ export function renderEmergency() {
  */
 export async function loadSocialNews() {
     try {
-        const response = await fetch('/api/social/news');
+        const response = await fetch('api/social/news');
         const data = await response.json();
         if (data.data && data.data.items) {
             setSocialNewsData(data.data.items);
@@ -317,7 +317,7 @@ export async function loadSocialNews() {
  */
 export async function loadTraffic() {
     try {
-        const response = await fetch('/api/social/traffic');
+        const response = await fetch('api/social/traffic');
         const data = await response.json();
         setTrafficData(data);
         renderTraffic();
@@ -331,7 +331,7 @@ export async function loadTraffic() {
  */
 export async function loadEmergency() {
     try {
-        const response = await fetch('/api/social/emergency');
+        const response = await fetch('api/social/emergency');
         const data = await response.json();
         setEmergencyData(data);
         renderEmergency();
