@@ -1,5 +1,11 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+  # 리버스 프록시(/myapi) 뒤에 배치할 때 컨텍스트 경로.
+  # 단독 실행 시에는 환경변수로 빈 값("")을 주면 루트(/)로 동작.
+  servlet:
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/myapi}
+  # 프록시 헤더(X-Forwarded-*) 기반으로 외부 URL 재구성
+  forward-headers-strategy: framework
   tomcat:
     # SSE 연결을 위한 비동기 처리 설정
     connection-timeout: 0
