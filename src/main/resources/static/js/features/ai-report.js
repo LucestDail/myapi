@@ -3,6 +3,14 @@
 // ===========================================
 
 import { showToast } from '../ui.js';
+import { postApi } from '../api.js';
+import {
+    stocksData,
+    weatherData,
+    yahooNewsData,
+    yonhapNewsData,
+    stockNewsData
+} from '../state.js';
 
 // 체크박스 설정 키
 const CHECKBOX_STATE_KEY = 'aiReportCheckboxState';
@@ -205,6 +213,33 @@ export function closeAIReportModal() {
 }
 
 /**
+ * Build session snapshot from current SSE/dashboard state
+ */
+function buildSessionSnapshot() {
+    const snapshot = {
+        fetchedAt: new Date().toISOString()
+    };
+
+    if (stocksData?.quotes?.length) {
+        snapshot.stocks = stocksData;
+    }
+    if (weatherData?.length) {
+        snapshot.weather = weatherData;
+    }
+    if (yahooNewsData?.length) {
+        snapshot.yahooNews = yahooNewsData;
+    }
+    if (yonhapNewsData?.length) {
+        snapshot.yonhapNews = yonhapNewsData;
+    }
+    if (stockNewsData?.length) {
+        snapshot.stockNews = stockNewsData;
+    }
+
+    return snapshot;
+}
+
+/**
  * Generate AI report
  */
 export async function generateAIReport() {
@@ -259,23 +294,17 @@ export async function generateAIReport() {
     }, 2000); // 2초마다 다음 메시지
 
     try {
-        const response = await fetch('api/ai-report/generate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-                topics,
-                settings 
-            })
+        const snapshot = buildSessionSnapshot();
+        const data = await postApi('api/ai-report/generate', {
+            topics,
+            settings,
+            snapshot
         });
-
-        const data = await response.json();
         
         // 프로그레스 인터벌 정리
         clearInterval(progressInterval);
         
-        if (response.ok && data.data && data.data.report) {
+        if (data.data && data.data.report) {
             const reportText = data.data.report;
             const reportHtml = convertMarkdownToHtml(reportText);
             

@@ -122,8 +122,12 @@ traffic:
     key: ${TRAFFIC_API_KEY:}
 
 # Gemini API
-# API Key는 환경변수 GEMINI_API_KEY로 설정
+# API Key는 환경변수 GEMINI_API_KEY로 설정 (gateway 사용 시 생략 가능)
 gemini:
   api:
     model: gemini-3-flash-preview
     key: ${GEMINI_API_KEY:}
+  gateway:
+    base-url: ${GEMINI_GATEWAY_BASE_URL:}
+    token: ${GEMINI_GATEWAY_TOKEN:}
+    service-id: ${GEMINI_SERVICE_ID:myapi}

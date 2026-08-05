@@ -13,9 +13,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -31,6 +34,17 @@ public class DashboardService {
     private final RssService rssService;
     private final SystemStatusService systemStatusService;
     private final UserSettingsService userSettingsService;
+
+    private static final Duration SNAPSHOT_TTL = Duration.ofMinutes(10);
+
+    private record CachedSnapshot(DashboardData data, Instant at) {
+        boolean isFresh() {
+            return Duration.between(at, Instant.now()).compareTo(SNAPSHOT_TTL) <= 0;
+        }
+    }
+
+    /** SSE/리포트용 — 사용자별 최근 대시보드 스냅샷 */
+    private final ConcurrentHashMap<String, CachedSnapshot> snapshotByUser = new ConcurrentHashMap<>();
 
     public DashboardService(
             FinnhubService finnhubService,
@@ -232,15 +246,89 @@ public class DashboardService {
 
     // ==================== 전체 데이터 ====================
 
+    public void recordSnapshot(String userId, DashboardData data) {
+        if (userId == null || userId.isBlank() || data == null) {
+            return;
+        }
+        snapshotByUser.put(userId, new CachedSnapshot(data, Instant.now()));
+    }
+
+    public Optional<DashboardData> getCachedSnapshot(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return Optional.empty();
+        }
+        CachedSnapshot cached = snapshotByUser.get(userId);
+        if (cached == null || !cached.isFresh()) {
+            return Optional.empty();
+        }
+        return Optional.of(cached.data());
+    }
+
+    /**
+     * AI 리포트용 — 선택 토픽만 로드. 최근 SSE 스냅샷(10분) 우선 재사용.
+     */
+    public ReportBundle getReportBundle(
+            String userId,
+            boolean needStocks,
+            boolean needWeather,
+            boolean needNews,
+            boolean needSystem) {
+        Optional<DashboardData> cached = getCachedSnapshot(userId);
+
+        StocksData stocks = null;
+        if (needStocks) {
+            stocks = cached.map(DashboardData::stocks).orElse(null);
+            if (stocks == null) {
+                stocks = getStocksData(userId);
+            }
+        }
+
+        List<WeatherData> weather = null;
+        if (needWeather) {
+            weather = cached.map(DashboardData::weather).orElse(null);
+            if (weather == null) {
+                weather = getWeatherData();
+            }
+        }
+
+        NewsData news = null;
+        if (needNews) {
+            news = cached.map(DashboardData::news).orElse(null);
+            if (news == null) {
+                news = getNewsData();
+            }
+        }
+
+        SystemData system = null;
+        if (needSystem) {
+            system = cached.map(DashboardData::system).orElse(null);
+            if (system == null) {
+                system = getSystemData();
+            }
+        }
+
+        return new ReportBundle(stocks, weather, news, system, cached.isPresent());
+    }
+
+    public record ReportBundle(
+            StocksData stocks,
+            List<WeatherData> weather,
+            NewsData news,
+            SystemData system,
+            boolean fromCache
+    ) {}
+
     /**
      * 사용자별 전체 데이터 조회
      */
     public DashboardData getFullData(String userId) {
-        return DashboardData.full(
+        DashboardData data = DashboardData.full(
                 getStocksData(userId),
                 getWeatherData(),
                 getNewsData(),
                 getSystemData()
         );
+        recordSnapshot(userId, data);
+        return data;
     }
 }

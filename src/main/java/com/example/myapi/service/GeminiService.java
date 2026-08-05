@@ -5,11 +5,14 @@ import com.google.genai.ResponseStream;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.HttpOptions;
 import com.google.genai.types.Part;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Slf4j
@@ -18,64 +21,98 @@ public class GeminiService {
 
     @Value("${gemini.api.model:gemini-3-flash-preview}")
     private String modelName;
-    
+
     @Value("${gemini.api.key:}")
     private String apiKey;
+
+    @Value("${gemini.gateway.base-url:}")
+    private String gatewayBaseUrl;
+
+    @Value("${gemini.gateway.token:}")
+    private String gatewayToken;
+
+    @Value("${gemini.gateway.service-id:myapi}")
+    private String gatewayServiceId;
+
+    private Client client;
+
+    @PostConstruct
+    void init() {
+        client = buildClient();
+        if (gatewayMode()) {
+            log.info("[gemini] gateway mode: {} (service-id={})", normalizedGatewayBaseUrl(), gatewayServiceId);
+        }
+    }
+
+    private boolean gatewayMode() {
+        return gatewayBaseUrl != null && !gatewayBaseUrl.isBlank();
+    }
+
+    private String normalizedGatewayBaseUrl() {
+        return gatewayBaseUrl.replaceAll("/+$", "");
+    }
+
+    private Client buildClient() {
+        Client.Builder builder = Client.builder();
+        if (gatewayMode()) {
+            Map<String, String> headers = new LinkedHashMap<>();
+            headers.put("x-service-id", gatewayServiceId);
+            if (gatewayToken != null && !gatewayToken.isBlank()) {
+                headers.put("x-gateway-token", gatewayToken);
+            }
+            return builder
+                    .apiKey(apiKey == null || apiKey.isBlank() ? "via-gateway" : apiKey)
+                    .httpOptions(HttpOptions.builder()
+                            .baseUrl(normalizedGatewayBaseUrl())
+                            .headers(headers)
+                            .build())
+                    .build();
+        }
+        return builder.apiKey(apiKey).build();
+    }
 
     /**
      * Generate content using Gemini API with streaming
      */
     public String generateContentStream(String prompt, Map<String, Object> settings, String systemInstruction) {
         try {
-            // API 키로 클라이언트 생성 (Builder 패턴 사용)
-            Client client = Client.builder()
-                    .apiKey(apiKey)
-                    .build();
-            
-            // GenerateContentConfig 생성 (설정값 적용)
             GenerateContentConfig.Builder configBuilder = GenerateContentConfig.builder();
-            
-            // 시스템 프롬프트 설정
+
             if (systemInstruction != null && !systemInstruction.isEmpty()) {
                 configBuilder.systemInstruction(
                     Content.fromParts(Part.fromText(systemInstruction))
                 );
             }
-            
+
             if (settings != null) {
-                // Temperature (0.0-2.0)
                 if (settings.containsKey("temperature")) {
                     Object temp = settings.get("temperature");
                     if (temp instanceof Number) {
                         configBuilder.temperature(((Number) temp).floatValue());
                     }
                 }
-                
-                // Top P (0.0-1.0)
+
                 if (settings.containsKey("topP")) {
                     Object topP = settings.get("topP");
                     if (topP instanceof Number) {
                         configBuilder.topP(((Number) topP).floatValue());
                     }
                 }
-                
-                // Top K (Float로 변환)
+
                 if (settings.containsKey("topK")) {
                     Object topK = settings.get("topK");
                     if (topK instanceof Number) {
                         configBuilder.topK(Float.valueOf(((Number) topK).floatValue()));
                     }
                 }
-                
-                // Presence Penalty
+
                 if (settings.containsKey("presencePenalty")) {
                     Object presencePenalty = settings.get("presencePenalty");
                     if (presencePenalty instanceof Number) {
                         configBuilder.presencePenalty(((Number) presencePenalty).floatValue());
                     }
                 }
-                
-                // Frequency Penalty
+
                 if (settings.containsKey("frequencyPenalty")) {
                     Object frequencyPenalty = settings.get("frequencyPenalty");
                     if (frequencyPenalty instanceof Number) {
@@ -83,15 +120,14 @@ public class GeminiService {
                     }
                 }
             }
-            
+
             GenerateContentConfig config = configBuilder.build();
-            
+
             StringBuilder fullResponse = new StringBuilder();
-            
-            // 스트리밍으로 응답 받기
-            ResponseStream<GenerateContentResponse> responseStream = 
+
+            ResponseStream<GenerateContentResponse> responseStream =
                 client.models.generateContentStream(modelName, prompt, config);
-            
+
             try {
                 for (GenerateContentResponse response : responseStream) {
                     if (response.text() != null) {
@@ -107,9 +143,9 @@ public class GeminiService {
                     }
                 }
             }
-            
+
             return fullResponse.toString();
-            
+
         } catch (Exception e) {
             log.error("Error generating content with Gemini API: {}", e.getMessage(), e);
             return "AI 서비스 호출 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.";
