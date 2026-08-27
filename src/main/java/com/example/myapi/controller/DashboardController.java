@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @RestController
 @RequestMapping("/api/dashboard")
-@CrossOrigin(origins = "*")
 public class DashboardController {
 
     private static final Logger log = LoggerFactory.getLogger(DashboardController.class);

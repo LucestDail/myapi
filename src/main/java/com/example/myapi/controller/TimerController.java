@@ -12,7 +12,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/timer")
-@CrossOrigin(origins = "*")
 public class TimerController {
 
     private final TimerService timerService;

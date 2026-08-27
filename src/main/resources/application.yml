@@ -94,6 +94,10 @@ logging:
 # .25는 키를 비운 채 배포 → 기존 소비자(대시보드·HARU life_info) 무영향.
 myapi:
   api-key: ${MYAPI_API_KEY:}
+  # CORS 허용 origin. 미설정 시 코드 기본값(홈랩 생태계 origin, MyapiSecurityProperties.Cors) 사용.
+  # 오버라이드: env MYAPI_CORS_ALLOWED_ORIGINS 를 콤마 구분으로 설정(Spring relaxed binding으로 자동 매핑).
+  # 예: MYAPI_CORS_ALLOWED_ORIGINS=http://localhost:*,http://192.168.11.25,https://oshhome.duckdns.org:8030
+  # (여기에 값을 두지 않는 이유: 빈 문자열이 바인딩되면 코드 기본값이 빈 목록으로 덮어써짐)
 
 # Finnhub API
 # API Key는 환경변수 FINNHUB_API_KEY로 설정

@@ -12,7 +12,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/settings")
-@CrossOrigin(origins = "*")
 public class SettingsController {
 
     private final UserSettingsService settingsService;

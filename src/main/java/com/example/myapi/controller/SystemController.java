@@ -11,7 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/system")
-@CrossOrigin(origins = "*")
 public class SystemController {
 
     private final SystemStatusService systemStatusService;

@@ -16,7 +16,6 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/info")
-@CrossOrigin(origins = "*")
 public class InfoController {
 
     private final LifeInfoService lifeInfoService;
