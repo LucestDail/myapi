@@ -89,6 +89,12 @@ logging:
     com.example.myapi.filter.UserIdentificationFilter: INFO
     com.example.myapi: DEBUG
 
+# myapi 자체 보안(옵션형)
+# api-key 설정 시 /api/* 요청에 X-Myapi-Key 헤더를 요구. 비어 있으면 검증 생략(fail-open).
+# .25는 키를 비운 채 배포 → 기존 소비자(대시보드·HARU life_info) 무영향.
+myapi:
+  api-key: ${MYAPI_API_KEY:}
+
 # Finnhub API
 # API Key는 환경변수 FINNHUB_API_KEY로 설정
 finnhub:
