@@ -36,6 +36,9 @@ public class LifeInfoService {
 
     private static final String DEFAULT_SIDO = "서울";
 
+    /** 대기질 조회 최대 시도 횟수(포털의 간헐적 SERVICETIMEOUT_ERROR 대응). */
+    private static final int AIR_QUALITY_MAX_ATTEMPTS = 3;
+
     /** 지역명 별칭 -> 에어코리아 sidoName. 정식 명칭을 먼저 검사하도록 순서를 유지한다. */
     private static final Map<String, String> SIDO_BY_ALIAS = new LinkedHashMap<>();
     static {
@@ -152,6 +155,21 @@ public class LifeInfoService {
             return AirQualityResponse.unavailable(location);
         }
 
+        // 포털이 간헐적으로 SERVICETIMEOUT_ERROR(05)를 돌려준다(연속 호출 시 대부분 다음 시도에 성공).
+        for (int attempt = 1; attempt <= AIR_QUALITY_MAX_ATTEMPTS; attempt++) {
+            AirQualityResponse result = fetchAirQuality(location, apiKey, attempt);
+            if (result != null) {
+                airQualityCache.put(location, result);
+                return result;
+            }
+        }
+
+        // 추정값을 지어내지 않는다 — 못 가져왔으면 못 가져왔다고 응답한다.
+        return AirQualityResponse.unavailable(location);
+    }
+
+    /** 대기질 1회 조회. 성공하면 응답, 실패(일시 오류 포함)면 null 을 돌려 재시도하게 한다. */
+    private AirQualityResponse fetchAirQuality(String location, String apiKey, int attempt) {
         try {
             // 공공데이터포털 API는 인코딩된 키를 직접 사용해야 함
             // YAML에는 디코딩된 키를 저장하고, 여기서 URL 인코딩 수행
@@ -202,23 +220,20 @@ public class LifeInfoService {
                     }
 
                     if (pm10 != null || pm25 != null) {
-                        AirQualityResponse result = AirQualityResponse.of(location, pm10, pm25, Instant.now());
-                        airQualityCache.put(location, result);
-                        return result;
+                        return AirQualityResponse.of(location, pm10, pm25, Instant.now());
                     }
                 }
 
-                log.warn("Air Korea returned no usable measurement for {}: {}", location,
+                log.warn("Air Korea returned no usable measurement for {} (attempt {}/{}): {}", location,
+                        attempt, AIR_QUALITY_MAX_ATTEMPTS,
                         root.path("response").path("header").path("resultMsg").asText(
                                 root.path("OpenAPI_ServiceResponse").path("cmmMsgHeader").path("returnAuthMsg").asText("")));
             }
         } catch (Exception e) {
-            log.error("Failed to fetch air quality for {}: {} - {}", location,
-                     e.getClass().getSimpleName(), e.getMessage());
+            log.error("Failed to fetch air quality for {} (attempt {}/{}): {} - {}", location,
+                     attempt, AIR_QUALITY_MAX_ATTEMPTS, e.getClass().getSimpleName(), e.getMessage());
         }
-
-        // 추정값을 지어내지 않는다 — 못 가져왔으면 못 가져왔다고 응답한다.
-        return AirQualityResponse.unavailable(location);
+        return null;
     }
 
     /**
