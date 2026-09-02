@@ -115,6 +115,7 @@ openweather:
 # 인증키는 환경변수 AIRKOREA_API_KEY로 설정 (Decoding 버전 저장, 코드에서 자동 인코딩)
 airkorea:
   base-url: https://apis.data.go.kr/B552584/UlfptcaAlarmInqireSvc
+  realtime-base-url: https://apis.data.go.kr/B552584/ArpltnInforInqireSvc
   api-key: ${AIRKOREA_API_KEY:}
 
 # 긴급재난문자 API

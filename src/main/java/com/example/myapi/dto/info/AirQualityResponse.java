@@ -16,6 +16,14 @@ public record AirQualityResponse(
         String recommendation,
         Instant measuredAt
 ) {
+    /**
+     * 대기질을 가져오지 못했을 때. 추정값을 지어내지 않고 "알수없음"을 명시한다.
+     */
+    public static AirQualityResponse unavailable(String location) {
+        return new AirQualityResponse(location, null, null, "알수없음", "알수없음",
+                null, "알수없음", "대기질 정보를 일시적으로 가져올 수 없습니다.", Instant.now());
+    }
+
     public static AirQualityResponse of(String location, Integer pm10, Integer pm25, Instant measuredAt) {
         String pm10Grade = gradeFromPm10(pm10);
         String pm25Grade = gradeFromPm25(pm25);

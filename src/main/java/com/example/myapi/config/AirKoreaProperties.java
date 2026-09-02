@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 public class AirKoreaProperties {
     
     private String baseUrl;
+    private String realtimeBaseUrl;
     private String apiKey;
 
     public String getBaseUrl() {
@@ -19,6 +20,14 @@ public class AirKoreaProperties {
 
     public void setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+    }
+
+    public String getRealtimeBaseUrl() {
+        return realtimeBaseUrl;
+    }
+
+    public void setRealtimeBaseUrl(String realtimeBaseUrl) {
+        this.realtimeBaseUrl = realtimeBaseUrl;
     }
 
     public String getApiKey() {
