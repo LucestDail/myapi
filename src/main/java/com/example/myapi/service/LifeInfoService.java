@@ -39,6 +39,15 @@ public class LifeInfoService {
     /** 대기질 조회 최대 시도 횟수(포털의 간헐적 SERVICETIMEOUT_ERROR 대응). */
     private static final int AIR_QUALITY_MAX_ATTEMPTS = 3;
 
+    /**
+     * 재시도 전체 예산(ms). 이 시간을 넘기면 남은 시도를 포기한다.
+     *
+     * <p>재시도는 견고성을 높이지만 호출자 입장에선 응답이 그만큼 느려진다. 실제로 포털이
+     * 느려졌을 때 3회 재시도가 25초를 끌어 HARU(타임아웃 10초)가 먼저 끊었다(2026-09-03).
+     * 무한정 버티는 대신 예산 안에서만 재시도하고, 넘으면 정직하게 "알수없음"을 돌려준다.</p>
+     */
+    private static final long AIR_QUALITY_BUDGET_MS = 8_000L;
+
     /** 지역명 별칭 -> 에어코리아 sidoName. 정식 명칭을 먼저 검사하도록 순서를 유지한다. */
     private static final Map<String, String> SIDO_BY_ALIAS = new LinkedHashMap<>();
     static {
@@ -156,11 +165,18 @@ public class LifeInfoService {
         }
 
         // 포털이 간헐적으로 SERVICETIMEOUT_ERROR(05)를 돌려준다(연속 호출 시 대부분 다음 시도에 성공).
+        // 단 호출자가 기다려주는 시간이 있으므로 예산 안에서만 재시도한다.
+        long deadline = System.currentTimeMillis() + AIR_QUALITY_BUDGET_MS;
         for (int attempt = 1; attempt <= AIR_QUALITY_MAX_ATTEMPTS; attempt++) {
             AirQualityResponse result = fetchAirQuality(location, apiKey, attempt);
             if (result != null) {
                 airQualityCache.put(location, result);
                 return result;
+            }
+            if (System.currentTimeMillis() >= deadline) {
+                log.warn("Air quality retry budget exhausted for {} after attempt {}/{}",
+                        location, attempt, AIR_QUALITY_MAX_ATTEMPTS);
+                break;
             }
         }
 
