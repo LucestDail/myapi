@@ -71,7 +71,8 @@ public class AlertService {
         if (dto.enabled() != null) {
             entity.setEnabled(dto.enabled());
         }
-        
+        dto.applyScheduleTo(entity);
+
         return AlertRuleDto.from(ruleRepository.save(entity));
     }
 
@@ -153,19 +154,13 @@ public class AlertService {
                 .toList();
 
         for (AlertRule rule : rules) {
-            boolean triggered = switch (rule.getConditionType()) {
-                case "above" -> currentValue > rule.getThreshold();
-                case "below" -> currentValue < rule.getThreshold();
-                case "equals" -> Math.abs(currentValue - rule.getThreshold()) < 0.001;
-                default -> false;
-            };
-
-            if (triggered) {
+            // 조건 판정은 AlertConditions 한 곳에만 둔다(시간대 조건 포함).
+            if (AlertConditions.shouldFire(rule, currentValue)) {
                 String message = buildAlertMessage(rule, currentValue);
                 String severity = determineSeverity(type, rule.getConditionType(), currentValue, rule.getThreshold());
-                
-                AlertEventDto event = AlertEventDto.create(type, message, severity, 
-                        target, currentValue, rule.getThreshold());
+
+                AlertEventDto event = AlertEventDto.create(type, message, severity,
+                        target, currentValue, rule.getThreshold(), rule.getChannels());
                 triggerAlert(userId, event);
             }
         }

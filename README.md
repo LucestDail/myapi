@@ -874,14 +874,67 @@ curl "http://localhost:8080/api/rss/custom?url=https://feeds.reuters.com/reuters
 [
   {
     "id": 1,
-    "name": "주가 상승 알림",
-    "type": "STOCK",
-    "condition": "AAPL > 150",
+    "type": "stock_price",
+    "target": "AAPL",
+    "conditionType": "above",
+    "threshold": 150.0,
     "enabled": true,
-    "createdAt": "2024-01-17T00:00:00Z"
+    "activeFrom": "09:00",
+    "activeTo": "18:00",
+    "activeDays": "MON,TUE,WED,THU,FRI",
+    "channels": "sse,browser",
+    "createdAt": "2026-09-16T00:00:00Z",
+    "updatedAt": "2026-09-16T00:00:00Z"
   }
 ]
 ```
+
+> ⚠️ 이 문서는 예전에 `name`/`condition` 같은 **존재하지 않는 필드**를 적고 있었습니다.
+> 위 형태가 실제 `AlertRuleDto` 입니다.
+
+**규칙 타입(`type`)**
+
+| type | target | 값 |
+|---|---|---|
+| `stock_price` / `stock_change` / `stock_percent` | 종목 심볼 | 현재가 / 변동금액 / 변동률 |
+| `cpu` / `memory` / `heap` | — | 사용률(%) |
+| `weather_temp` / `weather_humidity` | 도시명 | 온도(°C) / 습도(%) |
+| `exchange_rate` | `USD/KRW` 또는 `KRW` | 환율 |
+| `air_pm10` / `air_pm25` / `air_aqi` | 지역명(기본 `서울`) | 농도 / 통합지수 |
+| `air_grade` | 지역명 | **통합** 등급 순위(1 좋음 · 2 보통 · 3 나쁨 · 4 매우나쁨) |
+| `air_pm10_grade` / `air_pm25_grade` | 지역명 | 항목별 등급 순위 |
+
+**조건(`conditionType`)**: `above`(초과) · `below`(미만) · `equals`(도달) · `at_least`(이상) · `at_most`(이하)
+
+- 주식·날씨·시스템 알림은 대시보드 요청이 들어올 때 함께 검사됩니다.
+- **환율·미세먼지는 주기 작업**(기본 10분, `myapi.alerts.lifeinfo.interval-ms`)이 검사합니다.
+  해당 규칙이 **하나도 없으면 외부 API 를 부르지 않습니다**.
+- ⚠️ `air_grade`(통합 등급)와 `air_pm10_grade`(PM10 등급)는 **같지 않습니다**. PM10 120 은
+  PM10 등급으로는 "나쁨" 이지만 통합 등급으로는 "보통"(AQI 96)입니다.
+
+**시간대 조건**
+
+`activeFrom`/`activeTo` 는 `HH:mm`, 구간은 `[from, to)` 입니다. 기준 시간대는 **Asia/Seoul** 고정.
+
+- 비워 두면 시간 제한 없음
+- `22:00`~`06:00` 처럼 from &gt; to 이면 자정을 넘는 구간
+- from == to 이면 24시간
+- `activeDays` 는 `MON,TUE,...`(한글 `월,화` 도 가능), 비우면 매일
+- 표기를 못 읽으면 **시간 제한 없이 발동**하고 `warn` 로그를 남깁니다(오타 하나로 알림이 영영 안
+  오는 쪽이 더 나쁘다고 봤습니다)
+
+**알림 채널(`channels`)**
+
+| 값 | 동작 |
+|---|---|
+| `sse` (기본) | SSE 스트림 → 화면 토스트 |
+| `sse,browser` | 위 + 브라우저 OS 데스크톱 알림(Web Notifications) |
+
+- 서버는 채널과 무관하게 항상 SSE 로 내려보냅니다. `browser` 는 화면이 데스크톱 알림까지
+  띄우라는 힌트입니다(권한이 없으면 토스트만 뜹니다).
+- 기존 규칙(값 없음)은 `sse` 로 취급합니다 — 쓰던 규칙이 갑자기 OS 알림을 띄우지 않게.
+- 이메일 채널은 **없습니다**. 발송 경로(SMTP/SES)가 이 저장소에 없어서, 목록에만 넣어 두면
+  "켰는데 안 온다" 가 됩니다.
 
 #### 10.2 알림 규칙 생성
 
@@ -890,10 +943,26 @@ curl "http://localhost:8080/api/rss/custom?url=https://feeds.reuters.com/reuters
 **요청 본문:**
 ```json
 {
-  "name": "주가 상승 알림",
-  "type": "STOCK",
-  "condition": "AAPL > 150",
-  "enabled": true
+  "type": "exchange_rate",
+  "target": "USD/KRW",
+  "conditionType": "above",
+  "threshold": 1400.0,
+  "enabled": true,
+  "activeFrom": "09:00",
+  "activeTo": "18:00",
+  "activeDays": "MON,TUE,WED,THU,FRI",
+  "channels": "sse,browser"
+}
+```
+
+미세먼지 "나쁨 이상" 규칙:
+```json
+{
+  "type": "air_grade",
+  "target": "서울",
+  "conditionType": "at_least",
+  "threshold": 3,
+  "channels": "sse,browser"
 }
 ```
 
@@ -1040,9 +1109,41 @@ curl "http://localhost:8080/api/rss/custom?url=https://feeds.reuters.com/reuters
 |---|---|---|
 | GET | `/api/ai-report/topics` | 리포트 토픽 목록 |
 | POST | `/api/ai-report/generate` | 리포트 생성 |
+| GET | `/api/ai-report/history?type=&page=&size=` | 리포트 이력 목록(발췌만) |
+| GET | `/api/ai-report/history/{id}` | 리포트 이력 상세(전문) |
 
 LLM 호출은 **`osh-ai-gateway` 경유**가 표준이다(`GEMINI_GATEWAY_BASE_URL`).
 게이트웨이 토큰이 없으면 생성이 실패한다.
+
+#### 자동 리포트 (스케줄러)
+
+| 무엇 | 언제 | 설정 |
+|---|---|---|
+| 일간 자동 리포트 | 매일 20:00 | `myapi.report.daily.cron` |
+| 주간 트렌드 분석 | 일요일 20:30 | `myapi.report.weekly.cron` |
+
+🔴 **대상 사용자는 `myapi.report.daily.users`(쉼표 구분)에 적은 사람만이고, 기본값은 비어 있다**
+(=아무 일도 하지 않는다). 모든 사용자를 훑도록 만들면 익명 프로필 수만큼 Gemini 를 부르게 된다
+— 「동시성 한계」 절에 적힌 736만 행 사고와 같은 모양이다. 대상이 비어 있다는 사실도 로그로
+남기므로, 켠 줄 알고 기다리는 일은 없다.
+
+주간 트렌드는 최근 7일 안의 **일간 리포트가 2건 이상**일 때만 만든다. 비교 대상이 없는데
+"트렌드" 를 시키면 모델이 지어낸다.
+
+#### 리포트 이력 보관 정책
+
+| 상한 | 기본값 | 강제 시점 | 설정 |
+|---|---|---|---|
+| 사용자당 개수 | 50건 | **저장할 때마다** | `myapi.report.history.max-per-user` |
+| 보관 기간 | 90일 | 매일 03:00 | `myapi.report.history.retention-days` |
+
+- 개수 상한을 저장 경로에 둔 이유: 주기 작업이 꺼져 있어도 **이 상한만은 반드시 지켜져야** 한다.
+  비용은 인덱스를 탄 `COUNT` 한 번이고, 삭제는 넘쳤을 때만(보통 한 건) 일어난다.
+- 화면에서 만든 리포트도 이력에 남는다(`myapi.report.history.save-manual`, 기본 `true`).
+  요청 경로에 `INSERT` 한 번이 늘어나므로 끄고 싶으면 `false`. 익명 요청마다 쌓이던 프로필과
+  달리 **사용자가 명시적으로 누른 한 번**에만 일어난다는 점이 다르다.
+- 목록 조회는 본문을 싣지 않는다(발췌 300자). 커넥션이 하나라 전문 20건을 끌어오면 그대로
+  다른 요청의 지연이 된다.
 
 ---
 

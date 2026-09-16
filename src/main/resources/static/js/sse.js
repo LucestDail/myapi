@@ -111,7 +111,12 @@ export function connectSSE() {
 
     newEventSource.addEventListener('alert', (event) => {
         const data = JSON.parse(event.data);
+        // 토스트는 항상 띄운다. 브라우저 알림은 권한·설정에 따라 안 뜰 수 있는데,
+        // 그때 아무것도 안 보이면 사용자는 알림이 안 온 줄 안다.
         showToast(data.message, data.severity || 'info');
+        if (Array.isArray(data.channels) && data.channels.includes('browser')) {
+            showBrowserNotification(data);
+        }
     });
 
     newEventSource.onerror = () => {
@@ -124,6 +129,50 @@ export function connectSSE() {
             setTimeout(connectSSE, delay);
         }
     };
+}
+
+/**
+ * OS 데스크톱 알림 (Web Notifications).
+ *
+ * 규칙에 channels=sse,browser 로 켠 알림만 여기로 온다. 서버는 채널과 무관하게 SSE 로
+ * 내려보내고, 이 함수는 "화면을 안 보고 있어도 알게 하는" 부분만 맡는다.
+ *
+ * 권한이 거부돼 있으면 아무 일도 하지 않는다 — 호출한 쪽이 토스트를 이미 띄웠다.
+ */
+export function showBrowserNotification(data) {
+    if (typeof Notification === 'undefined') {
+        console.warn('[alert] 이 브라우저는 데스크톱 알림을 지원하지 않습니다');
+        return;
+    }
+    if (Notification.permission === 'granted') {
+        spawnNotification(data);
+        return;
+    }
+    if (Notification.permission === 'denied') {
+        // 조용히 사라지지 않게 남긴다. 사용자가 브라우저 설정에서 되돌려야 한다.
+        console.warn('[alert] 데스크톱 알림 권한이 거부돼 있어 토스트로만 표시합니다');
+        return;
+    }
+    Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+            spawnNotification(data);
+        } else {
+            console.warn('[alert] 데스크톱 알림 권한을 얻지 못했습니다:', permission);
+        }
+    }).catch((e) => console.warn('[alert] 알림 권한 요청 실패:', e));
+}
+
+function spawnNotification(data) {
+    try {
+        const title = data.severity === 'danger' ? '⚠️ 알림' : '🔔 알림';
+        new Notification(title, {
+            body: data.message,
+            // 같은 규칙의 알림이 연달아 오면 쌓이지 않고 덮어쓰게 한다
+            tag: `myapi-alert-${data.type || 'general'}-${data.target || ''}`
+        });
+    } catch (e) {
+        console.warn('[alert] 데스크톱 알림 표시 실패:', e);
+    }
 }
 
 /**

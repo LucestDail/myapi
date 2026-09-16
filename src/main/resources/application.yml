@@ -94,6 +94,27 @@ logging:
 # .25는 키를 비운 채 배포 → 기존 소비자(대시보드·HARU life_info) 무영향.
 myapi:
   api-key: ${MYAPI_API_KEY:}
+  alerts:
+    # 환율·미세먼지 알림 주기 검사. 해당 규칙이 하나도 없으면 외부 API 를 부르지 않는다.
+    lifeinfo:
+      enabled: ${MYAPI_LIFEINFO_ALERTS_ENABLED:true}
+      interval-ms: ${MYAPI_LIFEINFO_ALERTS_INTERVAL_MS:600000}
+      initial-delay-ms: 60000
+  report:
+    daily:
+      # 🔴 비워 두면 자동 리포트를 만들지 않는다. 모든 사용자에게 돌리면 익명 프로필 수만큼
+      # Gemini 를 부르게 된다(736만 행 사고와 같은 모양). 대상 id 를 쉼표로 명시할 것.
+      users: ${MYAPI_DAILY_REPORT_USERS:}
+      enabled: ${MYAPI_DAILY_REPORT_ENABLED:true}
+      cron: "0 0 20 * * *"
+    weekly:
+      cron: "0 30 20 * * SUN"
+    history:
+      # 보관 정책 — 개수는 저장할 때마다, 기간은 매일 03시에 강제한다.
+      max-per-user: ${MYAPI_REPORT_HISTORY_MAX:50}
+      retention-days: ${MYAPI_REPORT_HISTORY_DAYS:90}
+      cleanup-cron: "0 0 3 * * *"
+      save-manual: ${MYAPI_REPORT_SAVE_MANUAL:true}
   # CORS 허용 origin. 미설정 시 코드 기본값(홈랩 생태계 origin, MyapiSecurityProperties.Cors) 사용.
   # 오버라이드: env MYAPI_CORS_ALLOWED_ORIGINS 를 콤마 구분으로 설정(Spring relaxed binding으로 자동 매핑).
   # 예: MYAPI_CORS_ALLOWED_ORIGINS=http://localhost:*,http://192.168.11.25,https://oshhome.duckdns.org:8030
