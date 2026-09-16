@@ -1244,6 +1244,50 @@ SQLite 데이터베이스를 사용하며, 파일은 `./data/dashboard.db`에 �
 - `alert_log`: 알림 로그
 - `system_history`: 시스템 히스토리
 
+### ⚠️ 동시성 한계 — 모든 DB 접근이 **직렬화**된다
+
+설정(`application.yml`)이 이렇게 돼 있다:
+
+```yaml
+url: jdbc:sqlite:./data/dashboard.db?busy_timeout=30000&journal_mode=WAL
+hikari:
+  maximum-pool-size: 1          # ← 연결이 하나뿐이다
+  connection-timeout: 30000
+connection-init-sql: "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=30000;
+                      PRAGMA synchronous=NORMAL; PRAGMA cache_size=10000; ..."
+```
+
+🔴 **풀 크기가 1이므로 쓰기뿐 아니라 읽기까지 한 줄로 선다.** SQLite 자체는 WAL 모드에서
+*"쓰는 중에도 읽을 수 있다"* 를 주지만, **연결이 하나면 그 이점이 나오지 않는다** —
+동시 요청은 커넥션을 기다린다. 즉 여기서 `journal_mode=WAL` 은 동시성이 아니라
+**쓰기 지연과 `SQLITE_BUSY` 회피**를 위한 설정이다.
+
+관측된 값(2026-09-16, `.25` 운영):
+
+| | |
+|---|---|
+| `dashboard.db` | **772 MB** |
+| `-wal` | 4 MB |
+| 커넥션 풀 | **1** (뉴스 DB 는 별개로 5) |
+| `busy_timeout` | 30초 — 이 시간을 넘기면 요청이 실패한다 |
+| `connection-timeout` | 30초 — 커넥션을 못 얻어도 30초까지 기다린다 |
+
+**⇒ 최악의 경우 한 요청이 최대 30초까지 대기할 수 있다.** 호출자(대시보드 프런트,
+HARU 도구 등)의 타임아웃이 그보다 짧으면 **이쪽은 아직 일하는 중인데 저쪽이 먼저 끊는다.**
+
+**언제 문제가 되나**
+- 대량 쓰기(예: `system_history` 적재)가 도는 동안 읽기 요청이 밀린다
+- DB 가 커질수록 개별 쿼리가 느려지고 그만큼 줄이 길어진다 — 현재 **772MB**
+
+**지금은 왜 괜찮은가**
+- 개인용이라 동시 사용자가 사실상 1명이고, 관측된 지연이 문제가 된 적이 없다
+- `synchronous=NORMAL` + WAL 로 쓰기 자체는 빠르다
+
+**넘어야 할 선**
+- 동시 사용자가 늘거나 · `dashboard.db` 가 계속 커지거나 · 30초 대기가 실제로 관측되면
+  → 풀 크기를 늘리기 전에 **PostgreSQL 이전**을 봐야 한다. SQLite 에서 풀만 늘리면
+  `SQLITE_BUSY` 가 늘 뿐이다(그래서 1로 둔 것이다).
+
 ---
 
 ## 트러블슈팅
