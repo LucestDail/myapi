@@ -74,6 +74,23 @@ class UserIdentificationFilterTest {
     }
 
     @Test
+    void 헤더를_들고_오면_프로필이_없을때_만든다() throws Exception {
+        // 🔴 이 테스트가 없어서 한 번 놓쳤다(2026-09-16).
+        //
+        // 익명 저장을 끄고 나니 **어떤 경로로도 프로필이 생기지 않는 상태**가 됐는데,
+        // 필터 주석에는 "클라이언트가 id 를 채택하면 다음 요청부터 정상 기록된다" 고
+        // 적혀 있었다. **선언과 실물이 달랐고**, 라이브에서 요청을 실제로 태워 보고서야
+        // 잡았다. 단위 테스트가 그 축을 안 보고 있었다.
+        when(repo.findByUserId(any())).thenReturn(Optional.empty());
+        MockHttpServletRequest req = new MockHttpServletRequest("GET", "/api/system/status");
+        req.addHeader(UserIdentificationFilter.USER_ID_HEADER, "client-supplied-id");
+
+        filter.doFilter(req, new MockHttpServletResponse(), new FlagChain());
+
+        verify(repo).save(any(UserProfile.class));
+    }
+
+    @Test
     void 익명요청이_반복돼도_저장하지_않는다() throws Exception {
         when(repo.findByUserId(any())).thenReturn(Optional.empty());
 

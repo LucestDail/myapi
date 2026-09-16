@@ -90,7 +90,19 @@ public class UserIdentificationFilter implements Filter {
                 // 기존 사용자의 경우, 마지막 활동 시간 업데이트는 10분 이상 지났을 때만 시도
                 try {
                     UserProfile profile = userProfileRepository.findByUserId(userId).orElse(null);
-                    if (profile != null && profile.getLastActive() != null) {
+
+                    // 🔴 클라이언트가 **자기 id 를 들고 왔는데 프로필이 없으면 만든다**.
+                    //
+                    // 종전에는 이 분기가 *기존 프로필 갱신* 만 했다. 그래서 위에서 익명
+                    // 저장을 끄고 나니 **어떤 경로로도 프로필이 생기지 않는 상태**가 됐다 —
+                    // 내가 위 주석에 "채택하면 다음 요청부터 정상 기록된다" 고 적어 놓고
+                    // 실제로는 안 되는, 딱 그 모양이었다(2026-09-16 검증에서 잡았다).
+                    //
+                    // ⚠️ 익명과 달리 여기는 **무한 증가하지 않는다** — id 를 만들어 내는
+                    //    쪽이 클라이언트이고, 같은 id 로 다시 오면 이 분기는 갱신만 한다.
+                    if (profile == null) {
+                        userProfileRepository.save(new UserProfile(finalUserId));
+                    } else if (profile.getLastActive() != null) {
                         long minutesSinceLastActive = java.time.Duration.between(
                                 profile.getLastActive(), java.time.Instant.now()).toMinutes();
                         if (minutesSinceLastActive >= 10) {
