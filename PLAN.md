@@ -40,15 +40,15 @@
 ### Phase 1 — 기존 기능 안정화 + 문서 정합성 (2주)
 
 **1.1 코드-문서 불일치 수정**
-- [ ] README: `api-keys.conf` → `/etc/myapi/conf` 경로 통일
+- [x] README: `api-keys.conf` → `/etc/myapi/conf` 경로 통일  ← **됨**(2026-09-16): README 가 `api-keys.conf` 라 적어 실제 `run.sh`/`build.sh` 가 읽는 `/etc/myapi/conf` 와 달랐다 — 그대로 따라 하면 **키가 하나도 안 잡힌 채 뜬다**
 - [x] README: 인증 방식 설명 (쿠키 → X-User-Id 헤더) 정확하게 수정  ← **됨**: README 에 `X-User-Id` 인증 설명 반영됨
-- [ ] README에 `/api/social/**`, `/api/ai-report/**` 엔드포인트 문서 추가
-- [ ] README에 Gemini, 교통, 긴급재난 API 키 항목 추가
+- [x] README에 `/api/social/**`, `/api/ai-report/**` 엔드포인트 문서 추가  ← **됨**(2026-09-16): 절 12·13 신설(+목차). 컨트롤러는 오래전부터 있었는데 **문서만 읽은 사람에게는 없는 기능**이었다
+- [x] README에 Gemini, 교통, 긴급재난 API 키 항목 추가  ← **됨**(2026-09-16): README 는 키 **3개**만 적었는데 코드는 **15개**를 읽는다. 전수로 채웠다 — 빠진 키는 조용히 빈 문자열이 되어 **그 기능만 죽는다**
 
 **1.2 보안 개선**
 - [x] `application.yml`에서 모든 API 키를 환경 변수(`${...}`)로 통일  ← **됨**: 모든 키가 `${...}` env 참조
 - [x] 기본값에 실제 키 노출 제거  ← **됨**: 평문 키 0건 (2026-09-16 전수 확인)
-- [ ] `/etc/myapi/conf` 템플릿 파일 제공 (`conf.example`)
+- [x] `/etc/myapi/conf` 템플릿 파일 제공 (`conf.example`)  ← **됨**(2026-09-16): 🔴 `conf.example` 이 `.gitignore` 에 `.env` 들과 한 블록으로 묶여 있어 **만들어도 커밋될 수 없었다**. 그것부터 고쳤다
 
 **1.3 SQLite 한계 대응**
 - [x] WAL 모드 동작 확인 및 읽기 동시성 테스트  ← **됨**: `application.yml` WAL 설정 + 동시성 테스트 존재

@@ -23,6 +23,8 @@ Spring Boot 기반의 REST API 서버로, 주식 정보, 날씨, 뉴스, 시스�
   - [9. 타이머/포모도로 API](#9-타이머포모도로-api)
   - [10. 알림 API](#10-알림-api)
   - [11. 사용자 설정 API](#11-사용자-설정-api)
+  - [12. 소셜/실시간 API](#12-소셜실시간-api-apisocial)
+  - [13. AI 리포트 API](#13-ai-리포트-api-apiai-report)
 - [인증 및 사용자 식별](#인증-및-사용자-식별)
 - [응답 형식](#응답-형식)
 - [에러 처리](#에러-처리)
@@ -102,25 +104,54 @@ chmod +x build.sh run.sh dashboard.sh
 
 ### 환경 변수 설정
 
+> ⚠️ **파일 이름은 `/etc/myapi/conf` 다.** 이 문서는 2026-09-16 까지 `api-keys.conf` 라고
+> 적어 두었지만 `run.sh`·`build.sh` 가 실제로 읽는 것은 **`/etc/myapi/conf`** 이고,
+> 그대로 따라 하면 **키가 하나도 안 잡힌 채 뜬다**(그 상태로도 기동은 된다).
+>
+> ⚠️ 그리고 여기 적혀 있던 키는 **3개뿐이었는데 코드는 15개를 읽는다.** 빠진 키는
+> 조용히 빈 문자열이 되어 **그 기능만 죽는다** — 아래가 전수 목록이다.
+
 ```bash
 # 설정 디렉토리 생성
 sudo mkdir -p /etc/myapi
 
-# API 키 파일 생성
-sudo tee /etc/myapi/api-keys.conf > /dev/null << 'EOF'
-export FINNHUB_API_KEY="your_finnhub_key"
-export OPENWEATHER_API_KEY="your_openweather_key"
-export AIRKOREA_API_KEY="your_airkorea_key"
+# 설정 파일 생성 (템플릿은 저장소의 conf.example 참고)
+sudo tee /etc/myapi/conf > /dev/null << 'EOF'
+# ── 외부 API 키 ──────────────────────────────────────────────
+export FINNHUB_API_KEY="your_finnhub_key"            # 주식/암호화폐
+export OPENWEATHER_API_KEY="your_openweather_key"    # 날씨
+export AIRKOREA_API_KEY="your_airkorea_key"          # 대기질(공공데이터포털)
+export TRAFFIC_API_KEY="your_traffic_key"            # 교통(공공데이터포털)
+export EMERGENCY_API_SERVICE_KEY="your_emergency_key" # 긴급재난(공공데이터포털)
+
+# ── LLM (osh-ai-gateway 경유) ────────────────────────────────
+export GEMINI_API_KEY="your_gemini_key"              # 게이트웨이 미사용 시 직결용
+export GEMINI_GATEWAY_BASE_URL="http://127.0.0.1/llm"
+export GEMINI_GATEWAY_TOKEN="gateway_internal_token"
+export GEMINI_SERVICE_ID="myapi"
+
+# ── 뉴스 DB (osh 와 공유) ────────────────────────────────────
+export NEWS_DB_JDBC_URL="jdbc:postgresql://..."
+export NEWS_DB_USERNAME="news_user"
+export NEWS_DB_PASSWORD="..."
+
+# ── 서비스 자체 ──────────────────────────────────────────────
+export MYAPI_API_KEY=""                              # 비우면 ApiKeyRestFilter 가 통과시킨다
+export SERVER_PORT="8080"
+export SERVER_SERVLET_CONTEXT_PATH="/myapi"
 EOF
 
 # 파일 보안 설정
-sudo chmod 600 /etc/myapi/api-keys.conf
+sudo chmod 600 /etc/myapi/conf
 
 # 환경 변수 로드
-source /etc/myapi/api-keys.conf
+source /etc/myapi/conf
 ```
 
-또는 실행 스크립트(`run.sh`)에서 자동으로 로드됩니다.
+또는 실행 스크립트(`run.sh`)에서 자동으로 로드된다.
+
+> 🔴 `MYAPI_API_KEY` 를 **비우면 인증 없이 열린다**(`ApiKeyRestFilter` 가 키 미설정 시 통과).
+> `.25` 는 nginx 앞단에서 rate limit 만 걸고 있으므로, 외부에 노출한다면 이 값을 설정할 것.
 
 ---
 
@@ -977,6 +1008,44 @@ curl "http://localhost:8080/api/rss/custom?url=https://feeds.reuters.com/reuters
 
 ---
 
+
+### 12. 소셜/실시간 API (`/api/social`)
+
+> 🔴 이 절은 2026-09-16 에 추가됐다. `SocialController` 는 오래전부터 있었는데
+> **README 에 한 줄도 없었다** — 문서만 읽은 사람에게는 **존재하지 않는 기능**이었다.
+
+뉴스·교통·긴급재난을 JSON 과 **SSE 스트림** 두 형태로 낸다.
+
+| 메서드 | 경로 | 설명 |
+|---|---|---|
+| GET | `/api/social/news` | 뉴스 목록 (JSON) |
+| GET | `/api/social/traffic` | 교통 정보 (JSON) |
+| GET | `/api/social/emergency` | 긴급재난 (JSON) |
+| GET | `/api/social/traffic/raw` | 교통 원본 응답 |
+| GET | `/api/social/emergency/raw` | 긴급재난 원본 응답 |
+| GET | `/api/social/news/stream` | 뉴스 **SSE** (`text/event-stream`) |
+| GET | `/api/social/traffic/stream` | 교통 **SSE** |
+| GET | `/api/social/emergency/stream` | 긴급재난 **SSE** |
+
+⚠️ `/traffic`·`/emergency` 는 `TRAFFIC_API_KEY`·`EMERGENCY_API_SERVICE_KEY` 가 필요하다.
+키가 없으면 **빈 결과가 나오지 예외가 나지 않는다** — "데이터가 없다" 로 오인하기 쉽다.
+
+---
+
+### 13. AI 리포트 API (`/api/ai-report`)
+
+> 🔴 이 절도 2026-09-16 에 추가됐다(위와 같은 이유).
+
+| 메서드 | 경로 | 설명 |
+|---|---|---|
+| GET | `/api/ai-report/topics` | 리포트 토픽 목록 |
+| POST | `/api/ai-report/generate` | 리포트 생성 |
+
+LLM 호출은 **`osh-ai-gateway` 경유**가 표준이다(`GEMINI_GATEWAY_BASE_URL`).
+게이트웨이 토큰이 없으면 생성이 실패한다.
+
+---
+
 ## 인증 및 사용자 식별
 
 대부분의 API는 사용자별 데이터를 제공하기 위해 사용자 식별이 필요합니다.
@@ -1187,7 +1256,7 @@ Could not resolve placeholder 'FINNHUB_API_KEY'
 
 **해결:**
 ```bash
-source /etc/myapi/api-keys.conf
+source /etc/myapi/conf
 ```
 
 ### 포트 충돌

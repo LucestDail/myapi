@@ -50,7 +50,13 @@ mvnw.cmd
 .env
 .env.local
 .env.*.local
-conf.example
+# 실제 설정 파일(값이 들어간 것). ⚠️ .gitignore 는 **줄 끝 주석을 지원하지 않는다** —
+# `conf  # 설명` 으로 쓰면 그 전체가 패턴이 되어 아무것도 안 걸린다(2026-09-16 실제로 겪음).
+conf
+# ⚠️ `conf.example` 은 **무시하지 않는다**(2026-09-16).
+#    비밀이 없는 **템플릿**이고, 커밋돼야 다음 사람이 필요한 키를 안다.
+#    종전에는 `.env` 들과 한 블록에 묶여 무시되고 있었다 — 그래서
+#    PLAN 의 "conf.example 템플릿 제공" 이 만들어도 충족될 수 없었다.
 
 # Spring Boot
 spring-shell.log

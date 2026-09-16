@@ -1,0 +1,32 @@
+# myapi 설정 템플릿 — /etc/myapi/conf 로 복사해 쓴다
+#
+#   sudo install -m 600 conf.example /etc/myapi/conf
+#   sudo $EDITOR /etc/myapi/conf
+#
+# 🔴 이 파일은 README 의 키 블록에서 **생성된 것**이다(2026-09-16).
+#    키를 추가하면 README 와 이 파일을 **같이** 고칠 것 — 한쪽만 고치면
+#    다음 사람이 빠진 키를 모른 채 기동하고, 그 기능만 조용히 죽는다.
+# ⚠️ 실제 값을 넣은 뒤 이 파일을 커밋하지 말 것(.gitignore 대상 아님).
+
+# ── 외부 API 키 ──────────────────────────────────────────────
+export FINNHUB_API_KEY="your_finnhub_key"            # 주식/암호화폐
+export OPENWEATHER_API_KEY="your_openweather_key"    # 날씨
+export AIRKOREA_API_KEY="your_airkorea_key"          # 대기질(공공데이터포털)
+export TRAFFIC_API_KEY="your_traffic_key"            # 교통(공공데이터포털)
+export EMERGENCY_API_SERVICE_KEY="your_emergency_key" # 긴급재난(공공데이터포털)
+
+# ── LLM (osh-ai-gateway 경유) ────────────────────────────────
+export GEMINI_API_KEY="your_gemini_key"              # 게이트웨이 미사용 시 직결용
+export GEMINI_GATEWAY_BASE_URL="http://127.0.0.1/llm"
+export GEMINI_GATEWAY_TOKEN="<게이트웨이 내부 토큰>"
+export GEMINI_SERVICE_ID="myapi"
+
+# ── 뉴스 DB (osh 와 공유) ────────────────────────────────────
+export NEWS_DB_JDBC_URL="jdbc:postgresql://<host>:<port>/<db>"
+export NEWS_DB_USERNAME="<뉴스 DB 계정>"
+export NEWS_DB_PASSWORD="<비밀번호>"
+
+# ── 서비스 자체 ──────────────────────────────────────────────
+export MYAPI_API_KEY=""                              # 비우면 ApiKeyRestFilter 가 통과시킨다
+export SERVER_PORT="8080"
+export SERVER_SERVLET_CONTEXT_PATH="/myapi"
