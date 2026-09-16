@@ -56,8 +56,34 @@ class UserIdentificationFilterTest {
         String userId = res.getHeader(UserIdentificationFilter.USER_ID_HEADER);
         assertNotNull(userId);
         assertEquals(userId, req.getAttribute(UserIdentificationFilter.USER_ID_ATTRIBUTE));
-        // 신규 사용자 → 프로필 저장 시도
-        verify(repo).save(any(UserProfile.class));
+
+        // 🔴 **저장하지 않는다**(2026-09-16 계약 변경).
+        //
+        // 종전에는 여기서 `verify(repo).save(...)` 로 *"신규 사용자 → 프로필 저장"* 을
+        // 고정하고 있었다. 그런데 그 id 는 응답 헤더로만 돌려줄 뿐이라 클라이언트가
+        // 들고 다시 오지 않으면 **한 번 쓰고 버려진다.**
+        //
+        // 실측(`.25` 운영 DB): user_profiles **7,361,599 행** · 고유 id 7,361,613개 ·
+        // `dashboard.db` **772.8MB**(빈 페이지 0). 대조군은 user_settings 5행·todos 0행.
+        // 개인용 대시보드 하나에 **사용자 736만 명**이 쌓여 있었다.
+        //
+        // ⚠️ 더 나쁜 것은 지연이다 — 커넥션 풀이 **1**이라 모든 DB 접근이 직렬화되는데,
+        //    가장 많이 불리는 `/api/system/status`(46,734회)가 헤더 없이 오면
+        //    **매번 이 INSERT 가 그 한 줄에 선다.**
+        verify(repo, never()).save(any(UserProfile.class));
+    }
+
+    @Test
+    void 익명요청이_반복돼도_저장하지_않는다() throws Exception {
+        when(repo.findByUserId(any())).thenReturn(Optional.empty());
+
+        for (int i = 0; i < 50; i++) {
+            filter.doFilter(new MockHttpServletRequest("GET", "/api/system/status"),
+                    new MockHttpServletResponse(), new FlagChain());
+        }
+
+        // 종전 동작이라면 여기서 50행이 쌓인다. 그게 736만이 된 경위다.
+        verify(repo, never()).save(any(UserProfile.class));
     }
 
     @Test
@@ -72,7 +98,8 @@ class UserIdentificationFilterTest {
 
         assertTrue(chain.passed);
         assertNotNull(res.getHeader(UserIdentificationFilter.USER_ID_HEADER));
-        verify(repo).save(any(UserProfile.class));
+        // 빈 헤더도 익명이다 — 위와 같은 이유로 저장하지 않는다.
+        verify(repo, never()).save(any(UserProfile.class));
     }
 
     @Test
