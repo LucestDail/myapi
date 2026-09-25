@@ -6,6 +6,35 @@ Spring Boot 기반의 REST API 서버로, 주식 정보, 날씨, 뉴스, 시스�
 
 ---
 
+## 운영 상태 (2026-09-25) — 배포 완료, 행 축적 버그 정지
+
+홈랩 `.25` 에 **2026-09-25 배포 완료**. 라이브 = 저장소 `510ecc0`.
+
+### 무엇을 고쳤나
+라이브가 `b608731`(09-03)에 머물러 있어서 **익명 요청마다 사용자 행이 쌓이는 버그가 계속 돌고 있었다.**
+9/16 에 DB 를 1.6MB 로 정리했는데 8일 만에 `user_profiles` 가 **6,912행** 다시 쌓였다(하루 약 860행).
+
+반영된 수정:
+- `db09364` 익명 요청마다 사용자를 만들어 736만 행이 쌓였다
+- `8152906` 익명 저장을 끄니 어떤 경로로도 프로필이 안 생겼다
+
+**검증**: 재기동 후 익명 요청 10회 → `user_profiles` 6,912행 불변. 버그 정지 확인.
+롤백 jar: `target/myapi-0.0.1-SNAPSHOT.jar.bak-20260925-101916`
+
+### 다음 세션이 알아야 할 것
+- **`~/Workspace/myapi/myapi/` 자체가 배포 디렉터리**다(저장소명 아래 한 단계 더 중첩). 그 안의 `target/*.jar` 를 systemd 가 직접 실행한다. 반영하려면 서버 소스 갱신 + 재빌드 + 재기동이 필요하다.
+- 서버는 `git pull` 이 안 된다(HTTPS 인증). **git bundle** 로 옮긴다:
+  ```bash
+  git bundle create /tmp/myapi.bundle <서버SHA>..main
+  scp -O /tmp/myapi.bundle <서버>:/tmp/
+  ssh <서버> 'cd ~/Workspace/myapi/myapi && git fetch /tmp/myapi.bundle main && git merge --ff-only FETCH_HEAD'
+  ```
+- 🔴 **운영 키 소스는 `/etc/myapi.env`** 다. README 의 옛 경로(`api-keys.conf`)를 따라가면 키가 하나도 안 잡힌 채 뜬다.
+- 🔴 **인증이 꺼져 있다** — `/etc/myapi.env` 에 `MYAPI_API_KEY` 항목 자체가 없어 `ApiKeyRestFilter` 가 fail-open 으로 전부 통과시킨다. nginx 도 `/myapi/` 에 gwauth 를 안 걸고 rate-limit 만 건다. 생태계 최다 호출처(누적 68,433회)인데 방어가 이것뿐이다.
+- ⚠️ `MYAPI_DAILY_REPORT_USERS` 를 비우고 전체로 돌리면 과거 대량 Gemini 호출 사고가 재현된다.
+
+---
+
 ## 📋 목차
 
 - [기술 스택](#기술-스택)
