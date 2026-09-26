@@ -1,10 +1,17 @@
 // ===========================================
 // AI Report Feature Module
 // ===========================================
+//
+// 2026-09-26 개편
+//  - 생성 파라미터(Temperature·Top P·Top K·Penalty) 입력을 없앴다. 서버 고정값을 쓴다
+//    (AIReportController.FIXED_SETTINGS). 판단 근거가 화면에 없는 입력이었고,
+//    게이트웨이가 OpenRouter 로 번역해 넘기므로 일부는 전달되지도 않았다.
+//  - 진행률이 2초짜리 타이머로 도는 가짜였다. 이제 서버가 SSE 로 보내는 실제 단계를 찍는다.
+//  - 타입라이터 흉내를 걷어냈다. 모델이 뱉는 대로 본문이 흐른다.
 
 import { showToast } from '../ui.js';
-import { postApi } from '../api.js';
 import {
+    userId,
     stocksData,
     weatherData,
     yahooNewsData,
@@ -12,49 +19,26 @@ import {
     stockNewsData
 } from '../state.js';
 
-// 체크박스 설정 키
 const CHECKBOX_STATE_KEY = 'aiReportCheckboxState';
-const SETTINGS_STATE_KEY = 'aiReportSettingsState';
 const REPORT_STORAGE_KEY = 'aiReportLastReport';
 
-// 프로그레스 상태 메시지 (토스 라이팅)
-const PROGRESS_MESSAGES = [
-    { text: '데이터를 수집하고 있어요...', progress: 20 },
-    { text: '정보를 분석하고 있어요...', progress: 40 },
-    { text: '리포트를 구성하고 있어요...', progress: 60 },
-    { text: '내용을 다듬고 있어요...', progress: 80 },
-    { text: '거의 다 됐어요...', progress: 95 }
-];
+/** 진행 중 상태. 중복 실행을 막고 경과 시간 타이머를 정리하는 데 쓴다. */
+let running = false;
+let elapsedTimer = null;
 
-/**
- * Load checkbox state from localStorage
- */
 function loadCheckboxState() {
     try {
         const saved = localStorage.getItem(CHECKBOX_STATE_KEY);
-        if (saved) {
-            return JSON.parse(saved);
-        }
+        if (saved) return JSON.parse(saved);
     } catch (e) {
         console.error('Failed to load checkbox state:', e);
     }
-    // 기본값 - 모두 true
     return {
-        news: true,
-        weather: true,
-        traffic: true,
-        emergency: true,
-        stocks: true,
-        yahooFinance: true,
-        yonhapNews: true,
-        lifeInfo: true,
-        system: true
+        news: true, weather: true, traffic: true, emergency: true, stocks: true,
+        yahooFinance: true, yonhapNews: true, lifeInfo: true, system: true
     };
 }
 
-/**
- * Save checkbox state to localStorage
- */
 function saveCheckboxState(state) {
     try {
         localStorage.setItem(CHECKBOX_STATE_KEY, JSON.stringify(state));
@@ -63,96 +47,20 @@ function saveCheckboxState(state) {
     }
 }
 
-/**
- * Load settings state from localStorage
- */
-function loadSettingsState() {
+function saveLastReport(html) {
     try {
-        const saved = localStorage.getItem(SETTINGS_STATE_KEY);
-        if (saved) {
-            return JSON.parse(saved);
-        }
-    } catch (e) {
-        console.error('Failed to load settings state:', e);
-    }
-    // 기본값
-    return {
-        temperature: 1.0,
-        topP: 0.95,
-        topK: 40,
-        presencePenalty: 0.0,
-        frequencyPenalty: 0.0
-    };
-}
-
-/**
- * Save settings state to localStorage
- */
-function saveSettingsState(state) {
-    try {
-        localStorage.setItem(SETTINGS_STATE_KEY, JSON.stringify(state));
-    } catch (e) {
-        console.error('Failed to save settings state:', e);
-    }
-}
-
-/**
- * Save last report to localStorage
- */
-function saveLastReport(report) {
-    try {
-        localStorage.setItem(REPORT_STORAGE_KEY, report);
+        localStorage.setItem(REPORT_STORAGE_KEY, html);
     } catch (e) {
         console.error('Failed to save last report:', e);
     }
 }
 
-/**
- * Load last report from localStorage
- */
 function loadLastReport() {
     try {
         return localStorage.getItem(REPORT_STORAGE_KEY);
     } catch (e) {
-        console.error('Failed to load last report:', e);
         return null;
     }
-}
-
-/**
- * Update progress display
- */
-function updateProgress(messageIndex) {
-    const progressText = document.getElementById('ai-report-progress-text');
-    const progressFill = document.getElementById('ai-report-progress-fill');
-    
-    if (progressText && progressFill && messageIndex < PROGRESS_MESSAGES.length) {
-        const msg = PROGRESS_MESSAGES[messageIndex];
-        progressText.textContent = msg.text;
-        progressFill.style.width = msg.progress + '%';
-    }
-}
-
-/**
- * Typewriter effect for streaming display
- */
-function typeWriter(element, text, callback) {
-    const htmlText = convertMarkdownToHtml(text);
-    let index = 0;
-    const charsPerChunk = 3; // 한 번에 출력할 문자 수
-    
-    function type() {
-        if (index < htmlText.length) {
-            const chunk = htmlText.substring(0, index + charsPerChunk);
-            element.innerHTML = chunk;
-            index += charsPerChunk;
-            setTimeout(type, 10); // 10ms마다 업데이트
-        } else {
-            if (callback) callback();
-        }
-    }
-    
-    type();
 }
 
 /**
@@ -160,89 +68,112 @@ function typeWriter(element, text, callback) {
  */
 export function openAIReportModal() {
     const modal = document.getElementById('ai-report-modal');
-    if (modal) {
-        modal.classList.add('active');
-        
-        // 저장된 상태 로드
-        const checkboxState = loadCheckboxState();
-        const settingsState = loadSettingsState();
-        
-        // 체크박스에 상태 적용
-        document.getElementById('ai-report-news').checked = checkboxState.news !== false;
-        document.getElementById('ai-report-weather').checked = checkboxState.weather !== false;
-        document.getElementById('ai-report-traffic').checked = checkboxState.traffic !== false;
-        document.getElementById('ai-report-emergency').checked = checkboxState.emergency !== false;
-        document.getElementById('ai-report-stocks').checked = checkboxState.stocks !== false;
-        document.getElementById('ai-report-yahoo-finance').checked = checkboxState.yahooFinance !== false;
-        document.getElementById('ai-report-yonhap-news').checked = checkboxState.yonhapNews !== false;
-        document.getElementById('ai-report-life-info').checked = checkboxState.lifeInfo !== false;
-        document.getElementById('ai-report-system').checked = checkboxState.system !== false;
-        
-        // 설정값 적용
-        document.getElementById('ai-report-temperature').value = settingsState.temperature || 1.0;
-        document.getElementById('ai-report-topP').value = settingsState.topP || 0.95;
-        document.getElementById('ai-report-topK').value = settingsState.topK || 40;
-        document.getElementById('ai-report-presencePenalty').value = settingsState.presencePenalty || 0.0;
-        document.getElementById('ai-report-frequencyPenalty').value = settingsState.frequencyPenalty || 0.0;
-        
-        // 저장된 리포트가 있으면 표시
-        const lastReport = loadLastReport();
-        if (lastReport) {
-            document.getElementById('ai-report-content').innerHTML = lastReport;
-            document.getElementById('ai-report-result').style.display = 'block';
-            document.getElementById('ai-report-loading').style.display = 'none';
-            document.getElementById('ai-report-empty').style.display = 'none';
-        } else {
-            // 초기 상태 설정
-            document.getElementById('ai-report-result').style.display = 'none';
-            document.getElementById('ai-report-loading').style.display = 'none';
-            document.getElementById('ai-report-empty').style.display = 'block';
-            document.getElementById('ai-report-content').textContent = '';
-        }
+    if (!modal) return;
+    modal.classList.add('active');
+
+    const checkboxState = loadCheckboxState();
+    const map = {
+        'ai-report-news': 'news',
+        'ai-report-weather': 'weather',
+        'ai-report-traffic': 'traffic',
+        'ai-report-emergency': 'emergency',
+        'ai-report-stocks': 'stocks',
+        'ai-report-yahoo-finance': 'yahooFinance',
+        'ai-report-yonhap-news': 'yonhapNews',
+        'ai-report-life-info': 'lifeInfo',
+        'ai-report-system': 'system'
+    };
+    Object.entries(map).forEach(([id, key]) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = checkboxState[key] !== false;
+    });
+
+    const lastReport = loadLastReport();
+    const resultDiv = document.getElementById('ai-report-result');
+    const loadingDiv = document.getElementById('ai-report-loading');
+    const emptyDiv = document.getElementById('ai-report-empty');
+    const contentDiv = document.getElementById('ai-report-content');
+
+    loadingDiv.style.display = 'none';
+    if (lastReport) {
+        contentDiv.innerHTML = lastReport;
+        resultDiv.style.display = 'block';
+        emptyDiv.style.display = 'none';
+    } else {
+        contentDiv.textContent = '';
+        resultDiv.style.display = 'none';
+        emptyDiv.style.display = 'block';
     }
 }
 
-/**
- * Close AI report modal
- */
 export function closeAIReportModal() {
     const modal = document.getElementById('ai-report-modal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
+    if (modal) modal.classList.remove('active');
 }
 
 /**
  * Build session snapshot from current SSE/dashboard state
  */
 function buildSessionSnapshot() {
-    const snapshot = {
-        fetchedAt: new Date().toISOString()
-    };
-
-    if (stocksData?.quotes?.length) {
-        snapshot.stocks = stocksData;
-    }
-    if (weatherData?.length) {
-        snapshot.weather = weatherData;
-    }
-    if (yahooNewsData?.length) {
-        snapshot.yahooNews = yahooNewsData;
-    }
-    if (yonhapNewsData?.length) {
-        snapshot.yonhapNews = yonhapNewsData;
-    }
-    if (stockNewsData?.length) {
-        snapshot.stockNews = stockNewsData;
-    }
-
+    const snapshot = { fetchedAt: new Date().toISOString() };
+    if (stocksData?.quotes?.length) snapshot.stocks = stocksData;
+    if (weatherData?.length) snapshot.weather = weatherData;
+    if (yahooNewsData?.length) snapshot.yahooNews = yahooNewsData;
+    if (yonhapNewsData?.length) snapshot.yonhapNews = yonhapNewsData;
+    if (stockNewsData?.length) snapshot.stockNews = stockNewsData;
     return snapshot;
 }
 
+// ── 진행 표시 ───────────────────────────────────────────────────────────
+// 분모는 "선택한 데이터 수 + LLM 호출 + 이력 저장" 으로 잡는다. 실제로 서버가 밟는
+// 단계 수와 같아서, 막대가 차는 속도가 진짜 진행과 어긋나지 않는다.
+
+function setStage(label) {
+    const el = document.getElementById('ai-report-progress-text');
+    if (el) el.textContent = label;
+
+    const logEl = document.getElementById('ai-report-stage-log');
+    if (logEl) {
+        const line = document.createElement('div');
+        line.textContent = '· ' + label;
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+}
+
+function setProgress(done, total) {
+    const fill = document.getElementById('ai-report-progress-fill');
+    if (fill) {
+        const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+        fill.style.width = pct + '%';
+    }
+}
+
+function startElapsed() {
+    const el = document.getElementById('ai-report-elapsed');
+    const t0 = Date.now();
+    stopElapsed();
+    elapsedTimer = setInterval(() => {
+        if (el) el.textContent = ((Date.now() - t0) / 1000).toFixed(0) + '초';
+    }, 250);
+}
+
+function stopElapsed() {
+    if (elapsedTimer) {
+        clearInterval(elapsedTimer);
+        elapsedTimer = null;
+    }
+}
+
 /**
- * Generate AI report
+ * Generate AI report — 서버 진행 상황을 SSE 로 받아 그대로 보여준다.
  */
 export async function generateAIReport() {
+    if (running) {
+        showToast('이미 리포트를 만들고 있어요', 'warning');
+        return;
+    }
+
     const topics = {
         news: document.getElementById('ai-report-news').checked,
         weather: document.getElementById('ai-report-weather').checked,
@@ -254,22 +185,10 @@ export async function generateAIReport() {
         lifeInfo: document.getElementById('ai-report-life-info').checked,
         system: document.getElementById('ai-report-system').checked
     };
-
-    // 설정값 수집
-    const settings = {
-        temperature: parseFloat(document.getElementById('ai-report-temperature').value) || 1.0,
-        topP: parseFloat(document.getElementById('ai-report-topP').value) || 0.95,
-        topK: parseInt(document.getElementById('ai-report-topK').value) || 40,
-        presencePenalty: parseFloat(document.getElementById('ai-report-presencePenalty').value) || 0.0,
-        frequencyPenalty: parseFloat(document.getElementById('ai-report-frequencyPenalty').value) || 0.0
-    };
-
-    // 상태 저장
     saveCheckboxState(topics);
-    saveSettingsState(settings);
 
-    // 최소 하나는 선택되어야 함
-    if (!Object.values(topics).some(v => v)) {
+    const selected = Object.values(topics).filter(Boolean).length;
+    if (selected === 0) {
         showToast('최소 하나 이상의 데이터를 선택해주세요', 'warning');
         return;
     }
@@ -278,71 +197,113 @@ export async function generateAIReport() {
     const loadingDiv = document.getElementById('ai-report-loading');
     const emptyDiv = document.getElementById('ai-report-empty');
     const contentDiv = document.getElementById('ai-report-content');
+    const logEl = document.getElementById('ai-report-stage-log');
 
-    resultDiv.style.display = 'none';
+    running = true;
+    if (logEl) logEl.innerHTML = '';
     emptyDiv.style.display = 'none';
     loadingDiv.style.display = 'block';
-    
-    // 프로그레스 초기화
-    updateProgress(0);
-    let progressIndex = 0;
-    const progressInterval = setInterval(() => {
-        progressIndex++;
-        if (progressIndex < PROGRESS_MESSAGES.length) {
-            updateProgress(progressIndex);
-        }
-    }, 2000); // 2초마다 다음 메시지
+    resultDiv.style.display = 'block';
+    contentDiv.textContent = '';
+    setStage('요청 보내는 중');
+    // 서버 단계 수 = 수집원(selected) + 요청접수 + AI 모델 호출 + 이력 저장
+    const totalStages = selected + 3;
+    setProgress(0, totalStages);
+    startElapsed();
+
+    let stagesDone = 0;
+    let buffer = '';          // 스트림으로 받은 본문 누적
+    let finalReport = null;
 
     try {
-        const snapshot = buildSessionSnapshot();
-        const data = await postApi('api/ai-report/generate', {
-            topics,
-            settings,
-            snapshot
+        const response = await fetch('api/ai-report/generate/stream', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'text/event-stream',
+                'X-User-Id': userId
+            },
+            body: JSON.stringify({ topics, snapshot: buildSessionSnapshot() })
         });
-        
-        // 프로그레스 인터벌 정리
-        clearInterval(progressInterval);
-        
-        if (data.data && data.data.report) {
-            const reportText = data.data.report;
-            const reportHtml = convertMarkdownToHtml(reportText);
-            
-            // 리포트 저장
-            saveLastReport(reportHtml);
-            
-            // 스트리밍 효과로 출력
-            contentDiv.innerHTML = '';
-            loadingDiv.style.display = 'block';
-            resultDiv.style.display = 'block';
-            
-            // 프로그레스 완료 표시
-            updateProgress(PROGRESS_MESSAGES.length - 1);
-            const progressText = document.getElementById('ai-report-progress-text');
-            if (progressText) {
-                progressText.textContent = '리포트를 출력하고 있어요...';
-            }
-            const progressFill = document.getElementById('ai-report-progress-fill');
-            if (progressFill) {
-                progressFill.style.width = '100%';
-            }
-            
-            // 타입라이터 효과로 출력
-            typeWriter(contentDiv, reportText, () => {
-                loadingDiv.style.display = 'none';
-                showToast('리포트 생성이 완료되었어요', 'success');
-            });
-        } else {
-            throw new Error(data.data?.error || '리포트 생성 실패');
+
+        if (!response.ok || !response.body) {
+            throw new Error('HTTP ' + response.status);
         }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let raw = '';
+
+        // SSE 프레임 파싱. EventSource 를 못 쓰는 이유는 POST 여야 하기 때문이다
+        // (topics·snapshot 을 쿼리로 보내기엔 크다).
+        for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            raw += decoder.decode(value, { stream: true });
+
+            let sep;
+            while ((sep = raw.indexOf('\n\n')) >= 0) {
+                const frame = raw.slice(0, sep);
+                raw = raw.slice(sep + 2);
+
+                let eventName = 'message';
+                const dataLines = [];
+                frame.split('\n').forEach(line => {
+                    if (line.startsWith('event:')) eventName = line.slice(6).trim();
+                    else if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''));
+                });
+                if (dataLines.length === 0) continue;
+
+                let payload;
+                try {
+                    payload = JSON.parse(dataLines.join('\n'));
+                } catch {
+                    continue;
+                }
+
+                if (eventName === 'stage') {
+                    stagesDone++;
+                    setStage(payload.label);
+                    setProgress(stagesDone, totalStages);
+                } else if (eventName === 'delta') {
+                    buffer += payload.t || '';
+                    contentDiv.innerHTML = convertMarkdownToHtml(buffer);
+                    resultDiv.scrollTop = resultDiv.scrollHeight;
+                } else if (eventName === 'done') {
+                    finalReport = payload.report;
+                } else if (eventName === 'error') {
+                    throw new Error(payload.detail || payload.message);
+                }
+            }
+        }
+
+        const reportText = finalReport || buffer;
+        if (!reportText) throw new Error('빈 응답');
+
+        const html = convertMarkdownToHtml(reportText);
+        contentDiv.innerHTML = html;
+        saveLastReport(html);
+
+        setProgress(1, 1);
+        setStage('완료');
+        showToast('리포트 생성이 완료되었어요', 'success');
+
     } catch (error) {
         console.error('Failed to generate AI report:', error);
-        clearInterval(progressInterval);
-        loadingDiv.style.display = 'none';
-        emptyDiv.style.display = 'block';
-        contentDiv.textContent = '리포트 생성 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.';
-        resultDiv.style.display = 'none';
+        setStage('실패: ' + (error.message || '알 수 없는 오류'));
+        // 🔴 여기까지 받은 본문은 지우지 않는다 — 중간에 끊겨도 읽을 수 있는 게 낫다.
+        if (!buffer) {
+            resultDiv.style.display = 'none';
+            emptyDiv.style.display = 'block';
+        }
         showToast('리포트 생성 중 오류가 발생했어요', 'danger');
+    } finally {
+        running = false;
+        stopElapsed();
+        setTimeout(() => {
+            const el = document.getElementById('ai-report-loading');
+            if (el) el.style.display = 'none';
+        }, 1500);
     }
 }
 
@@ -351,22 +312,13 @@ export async function generateAIReport() {
  */
 function convertMarkdownToHtml(markdown) {
     let html = markdown;
-    
-    // Headers
     html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
     html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
     html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
-    
-    // Bold
     html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
-    
-    // Lists
     html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
     html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
     html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
-    
-    // Line breaks
     html = html.replace(/\n/g, '<br>');
-    
     return html;
 }

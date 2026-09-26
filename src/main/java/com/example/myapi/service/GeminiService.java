@@ -75,6 +75,18 @@ public class GeminiService {
      * Generate content using Gemini API with streaming
      */
     public String generateContentStream(String prompt, Map<String, Object> settings, String systemInstruction) {
+        return generateContentStream(prompt, settings, systemInstruction, null);
+    }
+
+    /**
+     * 위와 같되 조각이 도착할 때마다 {@code onDelta} 로 흘려보낸다.
+     *
+     * <p>🔴 소비자가 던진 예외는 삼킨다 — SSE 로 내보내다 클라이언트가 끊으면 예외가 나는데,
+     * 그것 때문에 생성 자체가 죽으면 안 된다. 이미 만든 부분은 반환값으로 살아남아
+     * 이력 저장까지는 정상으로 끝난다.
+     */
+    public String generateContentStream(String prompt, Map<String, Object> settings, String systemInstruction,
+                                        java.util.function.Consumer<String> onDelta) {
         try {
             GenerateContentConfig.Builder configBuilder = GenerateContentConfig.builder();
 
@@ -132,6 +144,16 @@ public class GeminiService {
                 for (GenerateContentResponse response : responseStream) {
                     if (response.text() != null) {
                         fullResponse.append(response.text());
+                        // 빈 조각은 흘리지 않는다 — 실측에서 2,540개 중 1,894개가 빈 문자열이었다.
+                        // 소비자가 할 일이 없는 프레임이라 SSE 대역만 먹는다.
+                        if (onDelta != null && !response.text().isEmpty()) {
+                            try {
+                                onDelta.accept(response.text());
+                            } catch (Exception deltaException) {
+                                log.debug("Delta consumer failed (client likely disconnected): {}",
+                                        deltaException.getMessage());
+                            }
+                        }
                     }
                 }
             } finally {

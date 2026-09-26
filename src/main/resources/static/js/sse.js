@@ -72,6 +72,28 @@ export function extractYouTubeId(url) {
 }
 
 /**
+ * 지금 즉시 대시보드를 다시 그린다.
+ *
+ * 🔴 왜 필요한가: 설정 저장 뒤 화면 갱신을 SSE 재연결에만 맡기고 있었다. 재연결은
+ *    비동기라 언제 첫 페이로드가 오는지 보장이 없고, 오는 도중 사용자가 모달을 닫으면
+ *    "저장했는데 안 바뀐다"로 보인다(실제로 티커 추가가 새로고침해야 반영됐다).
+ *    서버는 저장 직후부터 새 값을 내주므로(확인함), 여기서 한 번 당겨오면 결정적으로 반영된다.
+ *    SSE 재연결은 그대로 두되 — 이후 주기 갱신을 받아야 하니 — 첫 그림은 이쪽이 책임진다.
+ */
+export async function refreshDashboardNow() {
+    try {
+        const response = await fetch('api/dashboard/data', {
+            headers: { 'X-User-Id': userId }
+        });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        handleDashboardData(await response.json());
+    } catch (error) {
+        // 실패해도 치명적이지 않다 — 뒤따르는 SSE 재연결이 결국 같은 데이터를 준다.
+        console.warn('[SSE] Immediate dashboard refresh failed, falling back to SSE:', error);
+    }
+}
+
+/**
  * Connect to SSE stream
  */
 export function connectSSE() {

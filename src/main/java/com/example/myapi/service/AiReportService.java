@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * AI 리포트 생성.
@@ -105,6 +106,26 @@ public class AiReportService {
     }
 
     /**
+     * 위와 같되 <b>실제 진행 단계</b>를 흘려보낸다.
+     *
+     * <p>왜 필요했나: 화면의 진행률이 2초짜리 타이머로 돌아가는 가짜였다. 서버가 뭘 하는지와
+     * 무관해서, 수집이 오래 걸려도 "거의 다 됐어요" 가 떠 있고 실패해도 눈치챌 수 없었다.
+     * 여기서 내보내는 단계는 전부 실제로 그 일이 끝난 뒤에 찍힌다.
+     *
+     * @param onStage 단계 라벨(수집원 이름 등). null 이면 무시
+     * @param onDelta 본문 조각. Gemini 스트림이 오는 대로 그대로 흘린다. null 이면 무시
+     */
+    public String generate(String userId, Topics topics, Map<String, Object> settings,
+                           Map<String, Object> clientSnapshot,
+                           Consumer<String> onStage, Consumer<String> onDelta) {
+        String prompt = buildPrompt(userId, topics, clientSnapshot, onStage);
+        if (onStage != null) {
+            onStage.accept("AI 모델 호출 (프롬프트 " + prompt.length() + "자)");
+        }
+        return geminiService.generateContentStream(prompt, settings, buildSystemPrompt(), onDelta);
+    }
+
+    /**
      * 이미 만들어진 프롬프트로 리포트를 생성한다(주간 트렌드 분석처럼 대시보드 데이터가 아니라
      * 지난 리포트를 재료로 쓰는 경우). 페르소나·문체 지침은 일간 리포트와 같은 것을 쓴다 —
      * 같은 사람이 쓴 글처럼 읽혀야 한다.
@@ -113,8 +134,20 @@ public class AiReportService {
         return geminiService.generateContent(prompt, Map.of(), buildSystemPrompt());
     }
 
-    /** 프롬프트 조립만. Gemini 없이 검증할 수 있도록 분리해 둔다. */
+    /** 진행 콜백 없이 쓰던 기존 호출부를 위한 것. */
     public String buildPrompt(String userId, Topics topics, Map<String, Object> clientSnapshot) {
+        return buildPrompt(userId, topics, clientSnapshot, null);
+    }
+
+    private static void stage(Consumer<String> onStage, String label) {
+        if (onStage != null) {
+            onStage.accept(label);
+        }
+    }
+
+    /** 프롬프트 조립만. Gemini 없이 검증할 수 있도록 분리해 둔다. */
+    public String buildPrompt(String userId, Topics topics, Map<String, Object> clientSnapshot,
+                              Consumer<String> onStage) {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH시");
         String currentDateTime = now.format(formatter);
@@ -137,30 +170,39 @@ public class AiReportService {
                 bundle.news() != null && bundle.news().yahooNews() != null ? bundle.news().yahooNews().size() : 0);
 
         if (topics.news()) {
+            stage(onStage, "뉴스 수집");
             appendDbNews(promptBuilder);
         }
         if (topics.stocks() && bundle.stocks() != null) {
+            stage(onStage, "주가 수집");
             appendStocks(promptBuilder, bundle.stocks());
         }
         if (topics.yahooFinance() && bundle.news() != null) {
+            stage(onStage, "야후 파이낸스 수집");
             appendYahooNews(promptBuilder, bundle.news(), clientSnapshot);
         }
         if (topics.yonhapNews() && bundle.news() != null) {
+            stage(onStage, "연합뉴스 수집");
             appendYonhapNews(promptBuilder, bundle.news());
         }
         if (topics.weather() && bundle.weather() != null) {
+            stage(onStage, "날씨 수집");
             appendWeather(promptBuilder, bundle.weather());
         }
         if (topics.lifeInfo()) {
+            stage(onStage, "생활 정보 수집");
             appendLifeInfo(promptBuilder);
         }
         if (topics.traffic()) {
+            stage(onStage, "교통 돌발상황 수집");
             appendTraffic(promptBuilder);
         }
         if (topics.emergency()) {
+            stage(onStage, "긴급재난문자 수집");
             appendEmergency(promptBuilder);
         }
         if (topics.system() && bundle.system() != null) {
+            stage(onStage, "시스템 정보 수집");
             appendSystem(promptBuilder, bundle.system());
         }
 

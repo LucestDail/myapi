@@ -4,7 +4,7 @@
 
 import { userId, uiState, saveUiState, config, setConfig, alertRulesData, setAlertRulesData, editingRuleId, setEditingRuleId } from '../state.js';
 import { showToast, switchTab } from '../ui.js';
-import { loadConfig, updateYouTubePlayer, connectSSE } from '../sse.js';
+import { loadConfig, updateYouTubePlayer, connectSSE, refreshDashboardNow } from '../sse.js';
 import { startStockHighlight } from './stocks.js';
 import { 
     startSocialNewsAutoSlide, stopSocialNewsAutoSlide, renderSocialNews,
@@ -261,24 +261,31 @@ export async function saveSettings() {
         });
 
         if (response.ok) {
+            // 🔴 이전 값을 먼저 잡아 둔다. setConfig 로 덮은 뒤에는 비교할 대상이 사라진다.
+            const prevYoutubeUrl = config?.youtubeUrl || '';
+
             const savedConfig = await response.json();
             console.log('[Settings] Config saved, server returned:', savedConfig);
             showToast('설정이 저장되었습니다', 'info');
-            
+
             // 서버에서 반환된 설정으로 config 업데이트
             setConfig(savedConfig);
-            
-            // Only update YouTube player if URL actually changed
-            if (savedConfig.youtubeUrl && savedConfig.youtubeUrl !== youtubeUrl) {
+
+            // 🔴 종전 조건은 savedConfig.youtubeUrl !== youtubeUrl 이었다. youtubeUrl 은 방금
+            //    입력창에서 읽어 서버로 보낸 값이고 서버는 그걸 그대로 돌려주므로 두 값은 항상
+            //    같았다 — 즉 조건이 절대 참이 되지 않아 플레이어가 한 번도 안 바뀌었다.
+            //    비교 대상은 "보낸 값"이 아니라 "이전 값"이어야 한다.
+            if (savedConfig.youtubeUrl !== prevYoutubeUrl) {
                 updateYouTubePlayer(savedConfig.youtubeUrl);
             }
-            
-            // SSE 재연결하여 새 설정으로 데이터 받기
-            // connectSSE() 내부에서 기존 연결을 닫고 새로 연결하므로 별도로 닫을 필요 없음
+
+            // 화면 즉시 반영. SSE 재연결의 첫 페이로드를 기다리지 않는다(도착 시점 보장이 없다).
+            await refreshDashboardNow();
+
+            // 이후 주기 갱신을 받기 위해 SSE 는 새 설정으로 다시 연결한다.
             console.log('[Settings] Reconnecting SSE with new config, saved tickers:', savedConfig.tickers?.length || 0);
-            // 즉시 재연결 (SSE 연결 시 서버에서 자동으로 최신 데이터 전송)
             connectSSE();
-            
+
             startStockHighlight();
             
             // Update social news and traffic auto slide
