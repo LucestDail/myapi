@@ -19,6 +19,9 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- 백엔드만 빠르게 돌릴 때: mvn package -DskipFrontend=true -->
+        <skipFrontend>false</skipFrontend>
+        <node.version>v20.18.0</node.version>
     </properties>
 
     <dependencies>
@@ -85,6 +88,75 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <!--
+              프론트엔드(Vue 3 + Vite) 빌드를 Maven 에 묶는다 (2026-09-26).
+
+              왜: 종전엔 정적 파일 30개를 src/main/resources/static 에 손으로 두고
+                  index.html 에서 <script> 로 나열했다. 빌드 단계가 없으니 타입 검사도,
+                  번들링도, 캐시 무효화도 없었다.
+
+              🔴 산출물(frontend/dist)은 git 에 커밋하지 않는다. 생성물을 형상에 넣으면
+                 소스와 어긋난 채 배포되는 사고가 난다. 대신 node 를 플러그인이 내려받아
+                 빌드하므로 체크아웃 직후 `mvn package` 만으로 완전한 jar 가 나온다.
+                 (workspace 의 my-computer 는 산출물을 커밋하는데, 그 방식은 따르지 않는다)
+            -->
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.15.1</version>
+                <configuration>
+                    <workingDirectory>frontend</workingDirectory>
+                    <installDirectory>target</installDirectory>
+                    <skip>${skipFrontend}</skip>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>install-node-and-npm</id>
+                        <goals><goal>install-node-and-npm</goal></goals>
+                        <configuration>
+                            <nodeVersion>${node.version}</nodeVersion>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-install</id>
+                        <goals><goal>npm</goal></goals>
+                        <configuration>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-build</id>
+                        <goals><goal>npm</goal></goals>
+                        <configuration>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Vite 산출물을 jar 의 정적 경로로 옮긴다. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-frontend-dist</id>
+                        <phase>process-classes</phase>
+                        <goals><goal>copy-resources</goal></goals>
+                        <configuration>
+                            <skip>${skipFrontend}</skip>
+                            <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>frontend/dist</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

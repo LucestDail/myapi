@@ -68,3 +68,8 @@ temp/
 # SQLite Database
 data/
 *.db
+
+# 프론트엔드 (Vue 3 + Vite) — 산출물과 의존성은 커밋하지 않는다.
+# frontend-maven-plugin 이 node 를 내려받아 빌드하므로 체크아웃 직후 mvn package 로 충분하다.
+frontend/node_modules/
+frontend/dist/
