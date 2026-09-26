@@ -287,7 +287,7 @@ async function generate() {
 </script>
 
 <template>
-  <ModalShell title="AI 리포트 생성" width="1600px" @close="emit('close')">
+  <ModalShell title="AI 리포트 생성" width="1600px" height="95vh" @close="emit('close')">
     <div class="layout">
       <div class="left">
         <div class="form-group">
