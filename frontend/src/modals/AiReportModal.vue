@@ -299,12 +299,6 @@ async function generate() {
             </label>
           </div>
         </div>
-
-        <div class="form-group">
-          <button class="btn btn-primary btn-block" :disabled="running" @click="generate">
-            리포트 생성하기
-          </button>
-        </div>
       </div>
 
       <div class="right">
@@ -332,16 +326,32 @@ async function generate() {
 
     <template #footer>
       <button class="btn btn-secondary" @click="emit('close')">닫기</button>
+      <button class="btn btn-primary" :disabled="running" @click="generate">
+        {{ running ? '생성 중...' : '리포트 생성하기' }}
+      </button>
     </template>
   </ModalShell>
 </template>
 
 <style scoped>
+/*
+ * 🔴 2026-09-26 스크롤 재정정: "리포트 생성하기" 버튼이 좌측 패널 안에 있었고
+ * .left 에 overflow-y:auto 가 걸려 있어서, 본문이 스트리밍으로 길어지며
+ * 스크롤이 내려가면 버튼도 함께 밀려 눌리지 않는 상태가 됐다.
+ * → 버튼은 ModalShell 의 footer(항상 고정)로 옮겼다.
+ * → .left 는 스크롤하지 않는다. 체크박스 9개는 항상 다 보이는 짧은 목록이라
+ *   스크롤이 애초에 필요 없다 — 스크롤은 우측 .result 에서만 일어난다.
+ */
 .layout {
   display: flex;
   gap: 20px;
-  min-height: 60vh;
+  /* 부모(.modal-body)는 flex 컨테이너가 아니라 평범한 블록이라 flex:1 은 무의미하다.
+     height:100% 로 부모의 실제(used) 높이를 그대로 받아야 우측 .result 가 그
+     안에서 내부 스크롤한다 — 안 그러면 .layout 이 content 만큼 자라서 이 블록
+     전체를 modal-body 가 통째로 스크롤하게 되고, 그때 좌측도 같이 끌려 내려간다. */
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .left {
@@ -349,8 +359,7 @@ async function generate() {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  overflow-y: auto;
-  min-height: 0;
+  align-self: flex-start;
 }
 
 .right {
@@ -411,8 +420,6 @@ async function generate() {
 }
 
 .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.btn-block { width: 100%; }
 
 .btn-secondary:hover { border-color: var(--text-primary); color: var(--text-primary); }
 
