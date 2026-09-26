@@ -6,6 +6,53 @@ Spring Boot 기반의 REST API 서버로, 주식 정보, 날씨, 뉴스, 시스�
 
 ---
 
+## 운영 상태 (2026-09-26) — 프론트엔드 전면 개편
+
+바닐라 JS(정적 파일 30개, 빌드 도구 없음) → **Vue 3 + Vite + Pinia + TypeScript**.
+소스는 `frontend/`, Maven 빌드(`mvn package`)에 `frontend-maven-plugin`으로 통합되어
+있어 별도 빌드 단계 없이 jar 하나로 나온다. 산출물(`frontend/dist`)과
+`node_modules`는 커밋하지 않는다(`.gitignore`) — 체크아웃 직후 `mvn package`만
+돌리면 node 설치부터 빌드까지 끝난다.
+
+**왜 다시 짰나**: `api.js`에 `fetchApi`/`postApi` 등이 다 있었는데 쓰는 파일이
+0개였다 — `fetch()`를 27곳에서 직접 호출하고 `X-User-Id` 헤더를 17번 복붙했다.
+인라인 `onclick` 70개가 `window.*` 전역 57개를 강제했다. 빌드 도구가 없어 타입
+검사도 캐시 무효화도 불가능했다.
+
+**이식 중 발견·수정한 원본 결함**:
+- Emergency 섹션 페이지 크기 상수(10)를 렌더 함수가 무시하고 20 하드코딩
+- News 섹션이 야후/연합 페이지 인덱스를 공유해 한쪽 넘기면 같이 넘어감
+- Timer 최초 생성 API 호출이 어디서도 안 일어나 항상 500(조용히 무시됨)
+- Todo priority를 문자열로 보내 서버 Integer 필드에 반영된 적 없음
+- 티커 추가·유튜브 URL 변경이 새로고침해야 반영되던 버그 2건(SSE 재연결
+  타이밍 의존 + "보낸 값"과 "이전 값" 비교 실수)
+
+**레이아웃 재작업 — 처음엔 원본과 다른 화면을 만들었다.** 상단 헤더 + 카드
+그리드로 짰는데, 원본은 `grid-template-columns: 1fr 420px`(좌측 유튜브 1fr,
+우측 420px 고정 패널에 섹션이 점선 구분 목록으로 세로 쌓임) 2단 구조였고 탭도
+4개가 아니라 **5개**(사회·금융·생활·생산성·시스템)였다. `system` 섹션을 "탭 없는
+고아"로 오판해 `life`에 합쳤던 것도 되돌렸다.
+
+**모달 스크롤 — 세 번 만에 근본 원인을 잡았다.** AI 리포트 생성 중 좌측
+체크박스 패널이 우측 스트리밍 본문과 같이 밀려 내려가는 버그. 버튼을 푸터로
+옮기고 `.left`의 `overflow-y:auto`를 없앤 것만으로는 안 고쳐졌다 — 진짜 원인은
+`ModalShell`이 `max-height`만 있고 `height`가 없어서, 본문이 짧을 때 자식의
+`height:100%`가 CSS 스펙상 순환 참조로 **무시**되는 것이었다. 원본이
+`style="height:95vh"`로 처음부터 고정 높이였던 이유가 이것. `ModalShell`에
+`height` prop을 추가해 AI 리포트 모달에서만 고정 높이를 준다(다른 모달은
+콘텐츠에 맞춰 자동 크기 유지).
+
+**AI 리포트 자체도 개편**: 진행률이 2초 타이머로 도는 가짜였다 —
+`POST /api/ai-report/generate/stream`을 신설해 서버가 실제 단계(수집원별·AI
+호출·이력저장)를 SSE로 흘린다. 생성 파라미터(Temperature 등) 입력은 판단 근거가
+없었고 게이트웨이가 OpenRouter로 번역해 일부는 전달되지도 않아 서버 고정값으로
+옮겼다.
+
+배포 검증: 테스트 165개 → 재기동 15~21초·재시작 0회 → 참조 에셋 실제 200(waynai가
+9일간 겪은 base 경로 함정을 배포 전 체크리스트로 차단) → SSE 실데이터 확인.
+
+---
+
 ## 운영 상태 (2026-09-25) — 배포 완료, 행 축적 버그 정지
 
 홈랩 `.25` 에 **2026-09-25 배포 완료**. 라이브 = 저장소 `510ecc0`.
@@ -64,12 +111,18 @@ Spring Boot 기반의 REST API 서버로, 주식 정보, 날씨, 뉴스, 시스�
 
 ## 기술 스택
 
+**백엔드**
 - **Java 17**
 - **Spring Boot 3.3.6**
 - **Maven**
 - **SQLite** (데이터베이스)
 - **JPA/Hibernate**
 - **Server-Sent Events (SSE)** (실시간 스트리밍)
+
+**프론트엔드** (`frontend/`, 2026-09-26 개편)
+- **Vue 3 + TypeScript + Vite**
+- **Pinia** (상태 관리 — 대시보드 데이터 + SSE 연결, UI 상태)
+- `frontend-maven-plugin`으로 `mvn package`에 통합. 산출물은 커밋하지 않는다.
 
 ---
 
@@ -1353,10 +1406,19 @@ myapi/
     │   └── MyApiApplication.java
     └── resources/
         ├── application.yml # Spring Boot 설정
-        └── static/        # 정적 파일 (웹 UI)
-            ├── index.html
-            ├── css/
-            └── js/
+        └── static/        # 🔴 빌드 산출물 — 소스가 아니다, 커밋하지 않는다
+                            #    frontend/dist 가 mvn package 때 여기로 복사된다
+
+frontend/                   # Vue 3 + Vite + Pinia (2026-09-26 개편)
+├── src/
+│   ├── api/client.ts      # 네트워크 호출 단일 창구
+│   ├── stores/            # dashboard.ts(SSE+즉시갱신) · ui.ts(모드·토스트)
+│   ├── sections/registry.ts  # 섹션↔모드 매핑 — 여기 하나만 보면 된다
+│   ├── sections/{social,finance,life,productivity}/  # 16개 섹션
+│   ├── modals/            # SettingsModal · AiReportModal
+│   └── components/        # DashboardSection · ModalShell · MediaPlayer
+├── vite.config.ts         # base:'/myapi/' 고정 — 바꾸면 에셋 전부 404
+└── package.json
 ```
 
 ---
