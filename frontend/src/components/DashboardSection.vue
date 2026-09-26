@@ -5,14 +5,14 @@ import { useUiStore } from '@/stores/ui'
 /**
  * 모든 대시보드 섹션의 껍데기.
  *
- * 종전에는 섹션마다 헤더 마크업을 복붙하고 접기 토글을 각자 구현했다.
- * 여기 하나로 모아서, 새 섹션을 만들 때 껍데기를 다시 쓰지 않게 한다.
+ * 🔴 2026-09-26 정정: 처음엔 카드 그리드를 전제로 배경·테두리·radius 를 준
+ * "카드"로 만들었다. 원본(`css/sections.css` `.section`)은 카드가 아니라
+ * **점선 구분선만 있는 플랫 블록**이 420px 폭 패널 안에 세로로 쌓이는 구조다.
+ * 배경·테두리·radius 를 없애고 원본 그대로 맞춘다.
  */
 const props = defineProps<{
-  /** 접힘 상태 저장 키. 화면 전체에서 유일해야 한다. */
   id: string
   title: string
-  /** 마지막 갱신 시각(ISO). 없으면 표시하지 않는다. */
   updatedAt?: string | null
 }>()
 
@@ -28,26 +28,19 @@ const updatedLabel = computed(() => {
 </script>
 
 <template>
-  <section class="section" :class="{ 'is-collapsed': isCollapsed }">
-    <header class="section-header">
+  <section class="section" :class="{ collapsed: isCollapsed }">
+    <header class="section-header" @click="ui.toggleSection(id)">
       <div class="section-header-left">
-        <button
-          class="section-toggle"
-          :aria-expanded="!isCollapsed"
-          :aria-controls="`${id}-body`"
-          @click="ui.toggleSection(id)"
-        >
-          {{ isCollapsed ? '▸' : '▾' }}
-        </button>
+        <span class="section-toggle" :class="{ collapsed: isCollapsed }">▾</span>
         <h2 class="section-title">{{ title }}</h2>
       </div>
-      <div class="section-controls">
+      <div class="section-header-right" @click.stop>
         <slot name="controls" />
         <span v-if="updatedLabel" class="section-time">{{ updatedLabel }}</span>
       </div>
     </header>
 
-    <div v-show="!isCollapsed" :id="`${id}-body`" class="section-body">
+    <div v-show="!isCollapsed" class="section-body">
       <slot />
     </div>
   </section>
@@ -55,25 +48,22 @@ const updatedLabel = computed(() => {
 
 <style scoped>
 .section {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  min-width: 0; /* grid 자식이 내용 때문에 넘치지 않게 */
+  border-bottom: 1px dashed var(--border-color);
+  padding: 12px 16px;
 }
 
 .section-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
   gap: 8px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 10px;
+  cursor: pointer;
+  user-select: none;
 }
 
-.is-collapsed .section-header {
-  border-bottom: none;
+.section.collapsed .section-header {
+  margin-bottom: 0;
 }
 
 .section-header-left {
@@ -83,31 +73,29 @@ const updatedLabel = computed(() => {
   min-width: 0;
 }
 
+.section-toggle {
+  color: var(--text-muted);
+  font-size: 10px;
+  transition: transform 0.2s;
+  flex: 0 0 auto;
+}
+
+.section-toggle.collapsed {
+  transform: rotate(-90deg);
+}
+
 .section-title {
   margin: 0;
-  font-size: 13px;
+  color: var(--accent-yellow);
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary);
+  letter-spacing: 1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.section-toggle {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 12px;
-  padding: 2px 4px;
-  line-height: 1;
-}
-
-.section-toggle:hover {
-  color: var(--text-primary);
-}
-
-.section-controls {
+.section-header-right {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -115,14 +103,12 @@ const updatedLabel = computed(() => {
 }
 
 .section-time {
-  font-size: 11px;
   color: var(--text-muted);
+  font-size: 9px;
   font-variant-numeric: tabular-nums;
 }
 
 .section-body {
-  padding: 12px;
-  overflow: auto;
-  min-height: 0;
+  min-width: 0;
 }
 </style>

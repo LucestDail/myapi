@@ -72,14 +72,21 @@ export interface DashboardConfig {
   tickers: TickerConfig[]
 }
 
-/** 대시보드 모드 — 상단 탭. 섹션이 어느 모드에 보일지 결정한다. */
-export type DashboardMode = 'social' | 'finance' | 'life' | 'productivity'
+/**
+ * 대시보드 모드 — 우측 패널 상단 탭. 섹션이 어느 모드에 보일지 결정한다.
+ *
+ * 🔴 2026-09-26 정정: 처음 이식할 때 'system' 을 별도 탭이 아니라 고아 섹션으로
+ * 오판해 'life' 에 합쳤다. 원본 index.html 을 다시 확인하니 실제로는 **탭이 5개**였다
+ * (사회/금융/생활/생산성/시스템). 라벨·아이콘도 원본 그대로 맞춘다.
+ */
+export type DashboardMode = 'social' | 'finance' | 'life' | 'productivity' | 'system'
 
-export const DASHBOARD_MODES: ReadonlyArray<{ id: DashboardMode; label: string }> = [
-  { id: 'social', label: '소셜' },
-  { id: 'finance', label: '금융' },
-  { id: 'life', label: '생활' },
-  { id: 'productivity', label: '생산성' }
+export const DASHBOARD_MODES: ReadonlyArray<{ id: DashboardMode; label: string; icon: string }> = [
+  { id: 'social', label: '사회', icon: '📰' },
+  { id: 'finance', label: '금융', icon: '$' },
+  { id: 'life', label: '생활', icon: '☀' },
+  { id: 'productivity', label: '생산성', icon: '✓' },
+  { id: 'system', label: '시스템', icon: '▣' }
 ]
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected'

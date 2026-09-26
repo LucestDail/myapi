@@ -9,6 +9,18 @@ import MediaPlayer from '@/components/MediaPlayer.vue'
 import SettingsModal from '@/modals/SettingsModal.vue'
 import AiReportModal from '@/modals/AiReportModal.vue'
 
+/**
+ * 🔴 2026-09-26 레이아웃 재작성.
+ *
+ * 첫 시도가 "상단 헤더 + 전체 폭 카드 그리드"로 원본과 완전히 다른 화면을 만들었다.
+ * 원본은 좌우 2단 고정 레이아웃이다(`css/base.css` `.container`):
+ *
+ *   .container { display: grid; grid-template-columns: 1fr 420px; height: 100vh; }
+ *
+ * 좌측(1fr) = 유튜브 하나만, 우측(420px 고정) = 헤더+탭+섹션 목록이 전부 들어가는
+ * 좁은 패널. 섹션은 카드 그리드가 아니라 그 좁은 패널 안에서 위아래로 쌓이는
+ * 목록이다. 1024px 이하에서는 세로 스택(위 45vh 유튜브 / 아래 나머지)으로 바뀐다.
+ */
 const dashboard = useDashboardStore()
 const ui = useUiStore()
 
@@ -35,21 +47,33 @@ const timeLabel = computed(() =>
 )
 
 const statusLabel = computed(() => ({
-  connecting: '연결 중',
+  connecting: '연결 중...',
   connected: '연결됨',
   disconnected: '끊김'
 }[dashboard.status]))
 </script>
 
 <template>
-  <div class="dashboard">
-    <header class="dashboard-header">
-      <div class="header-left">
-        <h1 class="dashboard-title">MyAPI</h1>
-        <span class="dashboard-time">{{ timeLabel }}</span>
-      </div>
+  <div class="container">
+    <MediaPlayer />
 
-      <nav class="mode-tabs" aria-label="대시보드 모드">
+    <section class="dashboard-panel">
+      <header class="dashboard-header">
+        <div class="header-title-block">
+          <div class="dashboard-title">MyAPI Dashboard</div>
+          <div class="dashboard-time">{{ timeLabel }}</div>
+        </div>
+        <div class="header-actions">
+          <span class="connection-status">
+            <i class="status-dot" :class="dashboard.status"></i>
+            <span class="status-text">{{ statusLabel }}</span>
+          </span>
+          <button class="settings-btn ai-report-btn" @click="ui.openModal = 'ai-report'">AI 리포트</button>
+          <button class="settings-btn" @click="ui.openModal = 'settings'">설정</button>
+        </div>
+      </header>
+
+      <nav class="dashboard-mode-tabs" aria-label="대시보드 모드">
         <button
           v-for="m in DASHBOARD_MODES"
           :key="m.id"
@@ -58,31 +82,20 @@ const statusLabel = computed(() => ({
           :aria-pressed="ui.mode === m.id"
           @click="ui.setMode(m.id)"
         >
-          {{ m.label }}
+          <span class="mode-tab-icon">{{ m.icon }}</span>{{ m.label }}
         </button>
       </nav>
 
-      <div class="header-right">
-        <span class="conn" :class="dashboard.status" :title="statusLabel">
-          <i class="dot" aria-hidden="true"></i>{{ statusLabel }}
-        </span>
-        <button class="btn" @click="ui.openModal = 'ai-report'">AI 리포트</button>
-        <button class="btn" @click="ui.openModal = 'settings'">설정</button>
+      <div class="dashboard-content">
+        <component
+          :is="s.component"
+          v-for="s in visibleSections"
+          :key="s.id"
+          :section-id="s.id"
+          :title="s.title"
+        />
       </div>
-    </header>
-
-    <MediaPlayer />
-
-    <main class="dashboard-grid">
-      <component
-        :is="s.component"
-        v-for="s in visibleSections"
-        :key="s.id"
-        :section-id="s.id"
-        :title="s.title"
-        :class="{ wide: s.wide }"
-      />
-    </main>
+    </section>
 
     <SettingsModal v-if="ui.openModal === 'settings'" @close="ui.openModal = null" />
     <AiReportModal v-if="ui.openModal === 'ai-report'" @close="ui.openModal = null" />
@@ -91,124 +104,154 @@ const statusLabel = computed(() => ({
 </template>
 
 <style scoped>
-.dashboard {
-  min-height: 100%;
+.container {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  height: 100vh;
+  gap: 0;
+}
+
+.dashboard-panel {
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .dashboard-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-secondary);
-  position: sticky;
-  top: env(safe-area-inset-top, 0px);
-  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-tertiary);
+  flex: 0 0 auto;
 }
 
-.header-left {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+.header-title-block {
   min-width: 0;
 }
 
 .dashboard-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
   color: var(--accent-cyan);
-  letter-spacing: 0.02em;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dashboard-time {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.mode-tabs {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.mode-tab {
-  background: transparent;
-  border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 13px;
-  cursor: pointer;
+  font-size: 12px;
 }
 
-.mode-tab:hover { color: var(--text-primary); border-color: var(--border-accent); }
-
-.mode-tab.active {
-  background: var(--bg-tertiary);
-  color: var(--accent-cyan);
-  border-color: var(--accent-cyan);
-}
-
-.header-right {
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: auto;
+  gap: 12px;
+  flex: 0 0 auto;
 }
 
-.btn {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.btn:hover { border-color: var(--border-accent); }
-
-.conn {
-  display: inline-flex;
+.connection-status {
+  display: flex;
   align-items: center;
   gap: 6px;
   font-size: 12px;
   color: var(--text-muted);
 }
 
-.conn .dot {
-  width: 7px; height: 7px; border-radius: 50%;
+.status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
   background: var(--text-muted);
   display: inline-block;
 }
 
-.conn.connected .dot { background: var(--accent-green); }
-.conn.connecting .dot { background: var(--accent-yellow); }
-.conn.disconnected .dot { background: var(--accent-red); }
+.status-dot.connected { background: var(--accent-green); }
+.status-dot.connecting { background: var(--accent-yellow); }
+.status-dot.disconnected { background: var(--accent-red); }
 
-.dashboard-grid {
+.settings-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.settings-btn:hover { border-color: var(--border-accent); }
+
+.dashboard-mode-tabs {
+  display: flex;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 4px;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.mode-tab {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 12px;
-  padding: 12px 16px 24px;
-  align-content: start;
+  padding: 6px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
-/* 내용이 넓어야 읽히는 섹션은 두 칸을 쓴다. 한 칸만 남으면 자연히 한 칸이 된다. */
-.dashboard-grid > :deep(.wide) {
-  grid-column: span 2;
+.mode-tab:hover {
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
 }
 
-@media (max-width: 720px) {
-  .dashboard-grid { grid-template-columns: 1fr; padding-inline: 16px; }
-  .dashboard-grid > :deep(.wide) { grid-column: span 1; }
-  .header-right { width: 100%; margin-left: 0; }
+.mode-tab.active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+}
+
+.dashboard-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+@media (max-width: 1024px) {
+  .container {
+    grid-template-columns: 1fr;
+    grid-template-rows: 45vh 1fr;
+  }
+  .dashboard-panel {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+  }
+}
+
+@media (max-width: 768px) {
+  .container { grid-template-rows: 40vh 1fr; }
+  .dashboard-header { padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
+  .dashboard-title { font-size: 12px; }
+  .ai-report-btn { display: none; }
+}
+
+@media (max-width: 480px) {
+  .container { grid-template-rows: 35vh 1fr; }
 }
 </style>
